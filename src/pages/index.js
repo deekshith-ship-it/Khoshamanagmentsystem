@@ -1,0 +1,18 @@
+export { default as Dashboard } from './Dashboard';
+export { default as Leads } from './Leads';
+export { default as LeadDetails } from './LeadDetails';
+export { default as Proposals } from './Proposals';
+export { default as Projects } from './Projects';
+export { default as ProjectDetails } from './ProjectDetails';
+export { default as Infra } from './Infra';
+export { default as AddInfra } from './AddInfra';
+export { default as GeneralTasks } from './GeneralTasks';
+export { default as AddTask } from './AddTask';
+export { default as Links } from './Links';
+export { default as Team } from './Team';
+export { default as Onboarding } from './Onboarding';
+export { default as Billing } from './Billing';
+export { default as Contracts } from './Contracts';
+export { default as Settings } from './Settings';
+export { default as Login } from './Login';
+
