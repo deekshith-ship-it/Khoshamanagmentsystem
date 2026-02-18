@@ -11,7 +11,8 @@ import {
     Calendar,
     Search,
     FileCheck2,
-    Loader2
+    Loader2,
+    Upload
 } from 'lucide-react';
 import { agreementsAPI } from '../services/api';
 
@@ -32,6 +33,7 @@ const Contracts = () => {
         end_date: '',
         value: '',
         description: '',
+        document: null,
     });
 
 
@@ -107,6 +109,7 @@ const Contracts = () => {
             end_date: '',
             value: '',
             description: '',
+            document: null,
         });
     };
 
@@ -268,7 +271,7 @@ const Contracts = () => {
 
             {/* Add/Edit Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto animate-enter relative">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -370,6 +373,32 @@ const Contracts = () => {
                                     className="input min-h-[100px] resize-none"
                                     placeholder="Brief description..."
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Contract Document</label>
+                                <div className="relative group/file">
+                                    <input
+                                        type="file"
+                                        id="contract-file"
+                                        className="hidden"
+                                        onChange={(e) => setFormData({ ...formData, document: e.target.files[0] })}
+                                    />
+                                    <label
+                                        htmlFor="contract-file"
+                                        className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/30 dark:hover:bg-primary-900/10 cursor-pointer transition-all"
+                                    >
+                                        <div className="icon-circle-primary w-10 h-10 mb-3 group-hover/file:scale-110 transition-transform">
+                                            <Upload size={18} />
+                                        </div>
+                                        <p className="text-xs font-bold text-gray-900 dark:text-white mb-1">
+                                            {formData.document ? formData.document.name : 'Pick a file from local folder'}
+                                        </p>
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-medium">
+                                            {formData.document ? `${(formData.document.size / 1024).toFixed(1)} KB` : 'PDF, DOCX, or Images up to 10MB'}
+                                        </p>
+                                    </label>
+                                </div>
                             </div>
 
                             <div className="flex gap-3 mt-8">

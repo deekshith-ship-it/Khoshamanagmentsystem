@@ -567,35 +567,28 @@ app.delete('/api/projects/:projectId/assets/:assetId', async (req, res) => {
 // ============== TASKS API (Step 2 - Unified Visibility) ==============
 app.get('/api/tasks', async (req, res) => {
     try {
-        // Fetch general tasks
-        const generalTasks = await db.execute('SELECT *, "general" as source FROM tasks ORDER BY created_at DESC');
-
-        // Fetch project tasks with project context
-        const projectTasks = await db.execute(`
+        const result = await db.execute(`
             SELECT 
-                pt.id, pt.title, pt.status, pt.date, pt.created_at, pt.project_id,
-                p.title as project_title, p.assignee as project_assignee,
-                "project" as source 
+                id, title, description, status, assignee, date, priority, created_at, 
+                NULL as project_id, NULL as project_title, 'general' as source
+            FROM tasks
+            UNION ALL
+            SELECT 
+                pt.id, pt.title, NULL as description, pt.status, p.assignee as assignee, 
+                pt.date, 'Medium' as priority, pt.created_at, pt.project_id, p.title as project_title, 'project' as source
             FROM project_tasks pt
             JOIN projects p ON pt.project_id = p.id
-            ORDER BY pt.created_at DESC
+            ORDER BY created_at DESC
         `);
 
-        // Combine and normalize
-        const unifiedTasks = [
-            ...generalTasks.rows.map(t => ({
-                ...t,
-                assignee: t.assignee || 'Unassigned',
-                priority: t.priority || 'Medium'
-            })),
-            ...projectTasks.rows.map(t => ({
-                ...t,
-                id: `p${t.id}`, // Prefix to avoid ID collisions in list keys
-                realId: t.id,
-                assignee: t.project_assignee || 'Unassigned',
-                priority: 'Medium'
-            }))
-        ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        // Normalize and add ID prefixes to avoid collisions in frontend keys
+        const unifiedTasks = result.rows.map(t => ({
+            ...t,
+            id: t.source === 'project' ? `p${t.id}` : t.id,
+            realId: t.id,
+            assignee: t.assignee || 'Unassigned',
+            priority: t.priority || 'Medium'
+        }));
 
         res.json(unifiedTasks);
     } catch (error) {

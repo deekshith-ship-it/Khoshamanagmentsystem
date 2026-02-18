@@ -46,7 +46,7 @@ const AddInfra = () => {
             <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-6 overflow-hidden">
                 {/* Backdrop Overlay */}
                 <div
-                    className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300"
+                    className="absolute inset-0 bg-black/60 transition-all duration-300"
                     onClick={() => navigate('/infra')}
                 ></div>
 

@@ -91,7 +91,7 @@ const Infra = () => {
             }
         >
             {/* Filter Navigation Bar */}
-            <div className="bg-white/50 dark:bg-dark-surface/50 backdrop-blur-sm rounded-xl border border-gray-100 dark:border-dark-border p-1.5 mb-8 overflow-x-auto">
+            <div className="bg-white/50 dark:bg-dark-surface/50 rounded-xl border border-gray-100 dark:border-dark-border p-1.5 mb-8 overflow-x-auto">
                 <nav className="flex items-center min-w-max">
                     {tabs.map((tab) => (
                         <button

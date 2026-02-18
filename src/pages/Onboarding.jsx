@@ -4,7 +4,7 @@ import { Card, StatusBadge } from '../components/common';
 import {
     X, Search, Trash2, Edit, UserPlus, Phone, Mail,
     Building2, Briefcase, Loader2, MapPin, Calendar, CreditCard,
-    Shield, Heart, Hash
+    Shield, Heart, Hash, Upload
 } from 'lucide-react';
 import { employeesAPI } from '../services/api';
 
@@ -26,6 +26,7 @@ const emptyForm = {
     emergencyContactRelationship: '',
     emergencyPhone: '',
     status: 'active',
+    document: null,
 };
 
 const Onboarding = () => {
@@ -232,7 +233,7 @@ const Onboarding = () => {
 
             {/* ========== ADD / EDIT EMPLOYEE MODAL ========== */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-enter relative">
 
                         {/* Modal Header */}
@@ -285,6 +286,33 @@ const Onboarding = () => {
                                                 <span className="flex items-center gap-1.5"><Calendar size={12} /> Date of Birth</span>
                                             </label>
                                             <input type="date" value={formData.employeeDOB} onChange={(e) => updateField('employeeDOB', e.target.value)} className="input" />
+                                        </div>
+                                        <div className="md:col-span-2 mt-2">
+                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Photo or ID Document</label>
+                                            <div className="relative group/file">
+                                                <input
+                                                    type="file"
+                                                    id="emp-document"
+                                                    className="hidden"
+                                                    onChange={(e) => updateField('document', e.target.files[0])}
+                                                />
+                                                <label
+                                                    htmlFor="emp-document"
+                                                    className="flex items-center gap-4 p-4 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/30 dark:hover:bg-primary-900/10 cursor-pointer transition-all"
+                                                >
+                                                    <div className="icon-circle-primary w-10 h-10 shrink-0 group-hover/file:scale-110 transition-transform">
+                                                        <Upload size={18} />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                                                            {formData.document ? formData.document.name : 'Pick a file from local folder'}
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-medium">
+                                                            {formData.document ? `${(formData.document.size / 1024).toFixed(1)} KB` : 'Image or PDF (Max 5MB)'}
+                                                        </p>
+                                                    </div>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </section>

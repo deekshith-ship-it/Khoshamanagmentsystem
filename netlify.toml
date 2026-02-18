@@ -6,7 +6,7 @@
   # Pro-Dev Fix: This maps your API directly to Netlify Functions
   # Now you don't need Render or any other hosting!
   from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  to = "/.netlify/functions/api/api/:splat"
   status = 200
   force = true
 

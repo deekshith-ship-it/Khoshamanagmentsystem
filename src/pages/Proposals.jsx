@@ -187,7 +187,7 @@ const Proposals = () => {
 
             {/* Add Proposal Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-md p-6 relative animate-enter"
                     >
                         <div className="flex items-center justify-between mb-6">

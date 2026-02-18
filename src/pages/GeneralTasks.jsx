@@ -66,14 +66,14 @@ const GeneralTasks = () => {
             }
         >
             {/* Source Filter Tabs - Part 2 Enhancement */}
-            <div className="bg-white/50 dark:bg-dark-surface/50 backdrop-blur-sm rounded-xl border border-gray-100 dark:border-dark-border p-1.5 mb-6 inline-flex overflow-x-auto max-w-full">
+            <div className="bg-white/50 dark:bg-dark-surface/50 rounded-xl border border-gray-100 dark:border-dark-border p-1.5 mb-6 inline-flex overflow-x-auto max-w-full">
                 {sourceFilters.map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setSourceFilter(tab)}
                         className={`px-6 py-2.5 rounded-lg text-[11px] font-bold tracking-widest transition-all duration-300 min-w-max ${sourceFilter === tab
-                                ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
-                                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                            ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                            : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
                             }`}
                     >
                         {tab}
@@ -110,10 +110,15 @@ const GeneralTasks = () => {
                                         <h3 className="font-bold text-gray-900 dark:text-white text-sm truncate">{task.title}</h3>
                                         {task.source === 'project' && (
                                             <span className="text-[9px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded tracking-widest uppercase">
-                                                PROJECT
+                                                ASSIGNED TO PROJECT
                                             </span>
                                         )}
                                     </div>
+                                    {task.source === 'project' && (
+                                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2 font-medium">
+                                            Project: <span className="text-primary-600 dark:text-primary-400 font-bold">{task.project_title}</span>
+                                        </p>
+                                    )}
                                     <div className="flex items-center gap-3">
                                         <div className="flex items-center gap-1.5">
                                             <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide">{task.assignee}</span>
@@ -121,11 +126,6 @@ const GeneralTasks = () => {
                                         {task.date && (
                                             <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 font-medium italic">
                                                 <Calendar size={10} /> {task.date}
-                                            </span>
-                                        )}
-                                        {task.project_title && (
-                                            <span className="text-[10px] text-gray-400 dark:text-gray-600 font-medium italic">
-                                                in {task.project_title}
                                             </span>
                                         )}
                                     </div>

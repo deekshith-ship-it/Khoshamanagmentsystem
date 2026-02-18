@@ -110,7 +110,7 @@ const Projects = () => {
                             <div className="h-24 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-dark-surface border-b border-gray-100 dark:border-gray-800 relative p-5 flex items-end">
                                 <div className="flex items-center gap-2.5">
                                     <Avatar name={project.assignee || 'User'} size="xs" color="primary" />
-                                    <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-gray-100/80 dark:border-gray-700/50">
+                                    <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 px-2.5 py-1 rounded-lg border border-gray-100/80 dark:border-gray-700/50">
                                         {project.assignee || 'Unassigned'}
                                     </span>
                                 </div>
@@ -167,7 +167,7 @@ const Projects = () => {
 
             {/* Add Project Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-md p-6 relative animate-enter"
                     >
                         <div className="flex items-center justify-between mb-6">

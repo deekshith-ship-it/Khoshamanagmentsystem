@@ -86,7 +86,7 @@ const Sidebar = ({ collapsed, toggleCollapse }) => {
             {/* Mobile menu button */}
             <button
                 onClick={toggleMobile}
-                className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-md text-gray-700 dark:text-white rounded-xl border border-gray-200/60 dark:border-[#1F2937] transition-all duration-200 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
+                className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-white/90 dark:bg-[#111827]/90 text-gray-700 dark:white rounded-xl border border-gray-200/60 dark:border-[#1F2937] transition-all duration-200 hover:bg-gray-50 dark:hover:bg-[#1F2937]"
                 style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
             >
                 {isMobileOpen ? <X size={22} /> : <Menu size={22} />}
@@ -95,7 +95,7 @@ const Sidebar = ({ collapsed, toggleCollapse }) => {
             {/* Mobile overlay */}
             {isMobileOpen && (
                 <div
-                    className="lg:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-sm transition-opacity duration-300"
+                    className="lg:hidden fixed inset-0 bg-black/40 z-40 transition-opacity duration-300"
                     onClick={toggleMobile}
                 />
             )}
