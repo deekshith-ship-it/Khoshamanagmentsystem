@@ -1,36 +1,81 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
-import { Card, Avatar, StatusBadge } from '../components/common';
-import { ArrowLeft, Phone, Mail, MessageCircle, Clock, Send, Link2, X, ArrowRight } from 'lucide-react';
-import { leadsAPI, leadCommentsAPI, leadActivitiesAPI, proposalsAPI, projectsAPI } from '../services/api';
+import { Card, Avatar } from '../components/common';
+import {
+    ArrowLeft, Phone, Mail, MessageCircle, Clock, Send, Link2, X,
+    ArrowRight, CheckCircle, XCircle, FileText, Upload, Calendar, User, Edit2
+} from 'lucide-react';
+import { leadsAPI, leadActivitiesAPI, proposalsAPI, projectsAPI } from '../services/api';
+
+const PIPELINE_STAGES = [
+    { key: 'new', label: 'New' },
+    { key: 'qualified', label: 'Qualified' },
+    { key: 'proposal-sent', label: 'Proposal Sent' },
+    { key: 'negotiation', label: 'Negotiation' },
+    { key: 'follow-up', label: 'Follow-up' },
+    { key: 'closed-won', label: 'Closed Won' },
+    { key: 'closed-lost', label: 'Closed Lost' }
+];
+
+const LOST_REASONS = [
+    'Too Expensive',
+    'Budget Issue',
+    'Lost to Competitor',
+    'Not Interested',
+    'No Response',
+    'Scope Mismatch',
+    'Other'
+];
 
 const LeadDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [lead, setLead] = useState(null);
-    const [comments, setComments] = useState([]);
     const [activities, setActivities] = useState([]);
-    const [linkedProposals, setLinkedProposals] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [newComment, setNewComment] = useState('');
+
+    // Activity State
+    const [activityType, setActivityType] = useState('note'); // note, call, meeting
+    const [activityContent, setActivityContent] = useState('');
+
+    // Status Modals State
+    const [showProposalModal, setShowProposalModal] = useState(false);
+    const [proposalFile, setProposalFile] = useState(null);
+    const [proposalNote, setProposalNote] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
+
+    const [showLostModal, setShowLostModal] = useState(false);
+    const [lostReason, setLostReason] = useState('');
+    const [otherReason, setOtherReason] = useState('');
+
+    const [showConvertModal, setShowConvertModal] = useState(false);
+    const [conversionDocs, setConversionDocs] = useState({
+        scope: null, agreement: null, contract: null, pricing: null
+    });
+
+    // Edit Lead State
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editFormData, setEditFormData] = useState({});
+    const [editForm, setEditForm] = useState({
+        name: '', email: '', phone: '', role: '', company: ''
+    });
 
     const fetchLeadData = useCallback(async () => {
         try {
             setLoading(true);
-            const [leadData, commentsData, activitiesData, proposalsData] = await Promise.all([
+            const [leadData, activitiesData] = await Promise.all([
                 leadsAPI.getById(id),
-                leadCommentsAPI.getByLeadId(id),
                 leadActivitiesAPI.getByLeadId(id),
-                proposalsAPI.getByLeadId ? proposalsAPI.getByLeadId(id) : Promise.resolve([])
             ]);
             setLead(leadData);
-            setComments(commentsData || []);
             setActivities(activitiesData || []);
-            setLinkedProposals(proposalsData || []);
-            setEditFormData(leadData);
+            setEditForm({
+                name: leadData.name,
+                email: leadData.email,
+                phone: leadData.phone,
+                role: leadData.role,
+                company: leadData.company
+            });
         } catch (error) {
             console.error('Error fetching lead data:', error);
         } finally {
@@ -42,416 +87,580 @@ const LeadDetails = () => {
         fetchLeadData();
     }, [id, fetchLeadData]);
 
-    const handleAddComment = async (e) => {
-        e.preventDefault();
-        if (!newComment.trim()) return;
+    const handleUpload = async (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                try {
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fileName: file.name,
+                            content: reader.result,
+                            type: file.type
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.url) resolve(data.url);
+                    else reject('Upload failed');
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            reader.onerror = error => reject(error);
+        });
+    };
 
+    const updateStatus = async (status, extraData = {}) => {
         try {
-            await leadCommentsAPI.create({
+            await leadsAPI.update(id, { ...lead, status, ...extraData });
+
+            // Log automated activity
+            await leadActivitiesAPI.create({
                 lead_id: id,
-                content: newComment,
-                author: 'Current User'
+                type: 'status_change',
+                title: `Status updated to ${PIPELINE_STAGES.find(s => s.key === status)?.label}`,
+                description: `Lead moved to ${status} stage.`,
+                author: 'System'
             });
-            setNewComment('');
+
             fetchLeadData();
         } catch (error) {
-            console.error('Error adding comment:', error);
+            console.error('Error updating status:', error);
+            alert('Failed to update status');
         }
     };
 
-    const handleDelete = async () => {
-        if (window.confirm('Are you sure you want to delete this lead?')) {
-            try {
-                await leadsAPI.delete(id);
-                navigate('/leads');
-            } catch (error) {
-                console.error('Error deleting lead:', error);
+    const handleStageClick = (stageKey) => {
+        if (!lead || lead.status === stageKey) return;
+
+        if (stageKey === 'proposal-sent') {
+            setShowProposalModal(true);
+            return;
+        }
+
+        if (stageKey === 'closed-lost') {
+            setShowLostModal(true);
+            return;
+        }
+
+        if (stageKey === 'closed-won') {
+            if (window.confirm('Are you sure you want to mark this deal as Won?')) {
+                updateStatus('closed-won');
             }
+            return;
+        }
+
+        // Direct update for other stages
+        updateStatus(stageKey);
+    };
+
+    const handleSubmitProposal = async (e) => {
+        e.preventDefault();
+        if (!proposalFile) return;
+
+        try {
+            setIsUploading(true);
+            const fileUrl = await handleUpload(proposalFile);
+
+            // Create Proposal Record
+            await proposalsAPI.create({
+                title: `Proposal for ${lead.company}`,
+                client: lead.company,
+                lead_id: id,
+                file_url: fileUrl,
+                notes: proposalNote,
+                status: 'sent',
+                value: 0
+            });
+
+            await updateStatus('proposal-sent');
+            setShowProposalModal(false);
+            setProposalFile(null);
+            setProposalNote('');
+        } catch (error) {
+            console.error('Proposal submission failed:', error);
+            alert('Failed to submit proposal');
+        } finally {
+            setIsUploading(false);
         }
     };
 
-    const handleUpdate = async (e) => {
+    const handleSubmitLost = async (e) => {
         e.preventDefault();
+        const reason = lostReason === 'Other' ? otherReason : lostReason;
+        if (!reason) return;
+
+        await updateStatus('closed-lost', { closed_lost_reason: reason });
+        setShowLostModal(false);
+        setLostReason('');
+        setOtherReason('');
+    };
+
+    const handleAddActivity = async (e) => {
+        e.preventDefault();
+        if (!activityContent.trim()) return;
+
         try {
-            await leadsAPI.update(id, editFormData);
-            setShowEditModal(false);
+            await leadActivitiesAPI.create({
+                lead_id: id,
+                type: activityType,
+                title: activityType === 'call' ? 'Logged a Call' : activityType === 'meeting' ? 'Logged a Meeting' : 'Note Added',
+                description: activityContent,
+                author: 'Me' // Ideally current user
+            });
+            setActivityContent('');
             fetchLeadData();
         } catch (error) {
-            console.error('Error updating lead:', error);
+            console.error('Error adding activity:', error);
         }
     };
 
     const handleConvertToProject = async () => {
+        // Validate docs
+        const requiredDocs = ['scope', 'agreement', 'contract', 'pricing'];
+        const missing = requiredDocs.filter(d => !conversionDocs[d]);
+
+        if (missing.length > 0) {
+            alert(`Missing required documents: ${missing.join(', ')}`);
+            return;
+        }
+
         try {
+            setIsUploading(true);
+
+            // Upload all
+            const uploadedUrls = {};
+            for (const docType of requiredDocs) {
+                if (conversionDocs[docType]) {
+                    uploadedUrls[`${docType}_url`] = await handleUpload(conversionDocs[docType]);
+                }
+            }
+
             const projectData = {
                 title: `${lead.name} - Project`,
                 client: lead.company,
                 status: 'in-progress',
-                assignee: 'Unassigned'
+                assignee: 'Unassigned',
+                ...uploadedUrls
             };
+
             const newProject = await projectsAPI.create(projectData);
 
-            // Log activity
             await leadActivitiesAPI.create({
                 lead_id: id,
                 type: 'conversion',
                 title: 'Converted to Project',
-                description: `Lead converted to project: ${projectData.title}`
+                description: `Lead successfully converted to project: ${projectData.title}`,
+                author: 'System'
             });
 
-            // Navigate to the new project
+            // Update lead status if not already won
+            if (lead.status !== 'closed-won') {
+                await leadsAPI.update(id, { ...lead, status: 'closed-won' });
+            }
+
             navigate(`/projects/${newProject.id}`);
         } catch (error) {
-            console.error('Error converting to project:', error);
-            alert('Failed to convert lead to project');
+            console.error('Conversion failed:', error);
+            alert('Failed to convert project');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleUpdateLead = async (e) => {
+        e.preventDefault();
+        try {
+            await leadsAPI.update(id, { ...lead, ...editForm });
+            setLead({ ...lead, ...editForm });
+            setShowEditModal(false);
+        } catch (error) {
+            console.error('Error updating lead:', error);
+            alert('Failed to update lead');
         }
     };
 
     const formatDate = (dateStr) => {
         if (!dateStr) return 'Just now';
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diff = Math.floor((now - date) / (1000 * 60 * 60));
-        if (diff < 1) return 'Just now';
-        if (diff < 24) return `${diff}h ago`;
-        if (diff < 48) return 'Yesterday';
-        return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+        return new Date(dateStr).toLocaleDateString('en-IN', {
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
     };
 
-    const formatCurrency = (value) => {
-        if (!value) return '₹0';
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            maximumFractionDigits: 0
-        }).format(value);
-    };
+    if (loading) return (
+        <MainLayout><div className="flex justify-center h-64 items-center"><div className="animate-spin w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full"></div></div></MainLayout>
+    );
 
-
-
-    if (loading) {
-        return (
-            <MainLayout title="Lead Details">
-                <div className="flex items-center justify-center h-64">
-                    <p className="text-gray-500 dark:text-[#A0A0A0]">Loading lead details...</p>
-                </div>
-            </MainLayout>
-        );
-    }
-
-    if (!lead) {
-        return (
-            <MainLayout title="Lead Details">
-                <div className="flex items-center justify-center h-64">
-                    <p className="text-gray-500 dark:text-[#A0A0A0]">Lead not found</p>
-                </div>
-            </MainLayout>
-        );
-    }
+    if (!lead) return <MainLayout><div className="p-8 text-center text-gray-500">Lead not found</div></MainLayout>;
 
     return (
-        <MainLayout
-            title=""
-            headerAction={
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setShowEditModal(true)}
-                        className="btn btn-secondary text-xs uppercase tracking-wider"
-                    >
-                        Edit Lead
-                    </button>
-                    <button
-                        onClick={handleDelete}
-                        className="px-4 py-2 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-all text-xs font-bold uppercase tracking-wider"
-                    >
-                        Delete
-                    </button>
-                </div>
-            }
-        >
-            {/* Back Button */}
-            <button
-                onClick={() => navigate('/leads')}
-                className="flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white mb-6 transition-colors group"
-            >
-                <div className="p-1 rounded-lg group-hover:bg-gray-100 dark:group-hover:bg-gray-800 transition-colors">
-                    <ArrowLeft size={20} />
-                </div>
-                <span className="font-bold text-sm">Back to Leads</span>
+        <MainLayout title="">
+            <button onClick={() => navigate('/leads')} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6 transition-colors">
+                <ArrowLeft size={18} /> Back to Leads
             </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Profile & Info */}
-                <div className="lg:col-span-1 space-y-8">
-                    {/* Lead Profile Card */}
-                    <Card className="card glass text-center relative overflow-hidden group">
-                        <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-br from-primary-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 z-0"></div>
-                        <div className="relative z-10 flex flex-col items-center pt-8 pb-6 px-6">
-                            <div className="mb-4 p-1 bg-white dark:bg-gray-900 rounded-full shadow-sm">
-                                <Avatar name={lead.name} size="xl" />
-                            </div>
-                            <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-tight mb-1">{lead.name}</h1>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
-                                {lead.role} at {lead.company}
-                            </p>
-                            <StatusBadge status={lead.status} />
-
-                            {/* Contact Actions */}
-                            <div className="flex items-center justify-center gap-4 mt-8 w-full">
-                                <a
-                                    href={`tel:${lead.phone || ''}`}
-                                    className="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group/btn"
-                                >
-                                    <div className="w-10 h-10 rounded-full bg-primary-50 text-primary-600 dark:bg-gray-800 dark:text-primary-400 flex items-center justify-center group-hover/btn:scale-110 transition-transform shadow-sm">
-                                        <Phone size={18} />
-                                    </div>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Call</span>
-                                </a>
-                                <a
-                                    href={`mailto:${lead.email || ''}`}
-                                    className="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group/btn"
-                                >
-                                    <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 dark:bg-gray-800 dark:text-purple-400 flex items-center justify-center group-hover/btn:scale-110 transition-transform shadow-sm">
-                                        <Mail size={18} />
-                                    </div>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Email</span>
-                                </a>
-                                <a
-                                    href={`https://wa.me/${lead.phone?.replace(/\D/g, '') || ''}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group/btn"
-                                >
-                                    <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 dark:bg-gray-800 dark:text-green-400 flex items-center justify-center group-hover/btn:scale-110 transition-transform shadow-sm">
-                                        <MessageCircle size={18} />
-                                    </div>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">WhatsApp</span>
-                                </a>
-                            </div>
-                        </div>
-
-                        {(lead.email || lead.phone) && (
-                            <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 p-4 text-xs font-medium text-gray-500 dark:text-gray-400 space-y-1 text-left">
-                                {lead.email && <div className="flex items-center gap-2"><Mail size={12} className="opacity-50" /> {lead.email}</div>}
-                                {lead.phone && <div className="flex items-center gap-2"><Phone size={12} className="opacity-50" /> {lead.phone}</div>}
-                            </div>
-                        )}
-                    </Card>
-
-                    <button
-                        onClick={handleConvertToProject}
-                        className="w-full btn btn-primary py-4 text-sm uppercase tracking-widest shadow-lg shadow-primary-500/20 group"
-                    >
-                        <span className="group-hover:mr-2 transition-all">Convert to Project</span>
-                        <ArrowRight size={16} className="hidden group-hover:inline-block transition-all animate-bounce-x" />
-                    </button>
-
-                    {/* Linked Proposals */}
+            {/* HEADER & PIPELINE */}
+            <div className="mb-8">
+                <div className="flex justify-between items-start mb-6">
                     <div>
-                        <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4 ml-1">Linked Proposals</h2>
-                        <Card padding="none" className="card glass overflow-hidden">
-                            {linkedProposals.length > 0 ? (
-                                <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                                    {linkedProposals.map((proposal) => (
-                                        <div key={proposal.id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group cursor-pointer">
-                                            <div>
-                                                <h3 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{proposal.title}</h3>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                                                    {formatCurrency(proposal.value)} • {formatDate(proposal.created_at)}
-                                                </p>
-                                            </div>
-                                            <StatusBadge status={proposal.status || 'viewed'} className="scale-75 origin-right" />
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                    <Link2 size={24} className="mx-auto mb-2 opacity-50" />
-                                    <p className="text-xs font-bold">No linked proposals</p>
-                                </div>
-                            )}
-                        </Card>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{lead.name}</h1>
+                        <p className="text-gray-500">{lead.role} at <span className="font-semibold text-gray-700 dark:text-gray-300">{lead.company}</span></p>
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setShowEditModal(true)}
+                            className="btn btn-secondary"
+                        >
+                            <Edit2 size={16} className="mr-2" /> Edit Lead
+                        </button>
+                        {lead.status !== 'closed-lost' && (
+                            <button
+                                onClick={() => setShowConvertModal(true)}
+                                className="btn btn-primary shadow-lg shadow-primary-500/20"
+                            >
+                                Convert to Project <ArrowRight size={16} className="ml-2" />
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                {/* Right Column: Activity & Comments */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Activity Timeline */}
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <Clock size={20} className="text-primary-500" />
-                            Activity Timeline
-                        </h2>
-                        <Card className="card glass">
-                            {activities.length > 0 ? (
-                                <div className="relative pl-4 space-y-8 before:absolute before:inset-y-0 before:left-2 before:w-[2px] before:bg-gray-100 dark:before:bg-gray-800">
-                                    {activities.map((activity) => (
-                                        <div key={activity.id} className="relative pl-6">
-                                            <div className="absolute top-1 left-[-5px] w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 bg-gray-200 dark:bg-gray-700 shadow-sm z-10 flex items-center justify-center">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-gray-500 dark:bg-gray-400"></div>
-                                            </div>
-                                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 mb-1">
-                                                <h4 className="font-bold text-sm text-gray-900 dark:text-white">{activity.title}</h4>
-                                                <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded-md self-start">
-                                                    {formatDate(activity.created_at)}
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed bg-gray-50/50 dark:bg-gray-800/30 p-3 rounded-lg border border-gray-100 dark:border-gray-800/50">
-                                                {activity.description}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-                                    <Clock size={40} className="mx-auto opacity-20 mb-4" />
-                                    <p className="text-sm font-medium">No activity recorded yet</p>
-                                </div>
-                            )}
-                        </Card>
-                    </div>
+                {/* VISUAL PIPELINE */}
+                <Card padding="none" className="overflow-x-auto relative z-0">
+                    <div className="flex min-w-max p-1 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                        {PIPELINE_STAGES.map((stage, index) => {
+                            const isCurrent = lead.status === stage.key;
+                            const isPast = PIPELINE_STAGES.findIndex(s => s.key === lead.status) > index;
 
-                    {/* Comments & Notes */}
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <MessageCircle size={20} className="text-primary-500" />
-                            Comments & Notes
-                        </h2>
-                        <Card className="card glass flex flex-col h-[500px]">
-                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4 mb-4">
-                                {comments.length > 0 ? (
-                                    comments.map((comment) => (
-                                        <div key={comment.id} className="flex gap-4 group">
-                                            <Avatar name={comment.author || 'User'} size="sm" />
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-bold text-sm text-gray-900 dark:text-white">{comment.author}</span>
-                                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{formatDate(comment.created_at)}</span>
-                                                </div>
-                                                <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800/50 p-3 rounded-r-2xl rounded-bl-2xl">
-                                                    {comment.content}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                                        <MessageCircle size={32} className="opacity-20 mb-3" />
-                                        <p className="text-sm font-bold">No comments yet</p>
-                                        <p className="text-xs">Start the conversation</p>
+                            return (
+                                <button
+                                    key={stage.key}
+                                    onClick={() => handleStageClick(stage.key)}
+                                    className={`
+                                        relative flex-1 px-4 py-3 text-xs font-bold uppercase tracking-wider text-center transition-all duration-300
+                                        ${isCurrent
+                                            ? 'bg-white dark:bg-dark-surface text-primary-600 shadow-sm rounded-lg z-10 scale-105'
+                                            : isPast
+                                                ? 'text-primary-600/70 hover:bg-white/50'
+                                                : 'text-gray-400 hover:text-gray-600 dark:text-gray-600'
+                                        }
+                                    `}
+                                >
+                                    <div className="flex items-center justify-center gap-2">
+                                        {isPast && <CheckCircle size={14} />}
+                                        {stage.key === 'closed-lost' && lead.status === 'closed-lost' && <XCircle size={14} className="text-red-500" />}
+                                        <span className={stage.key === 'closed-lost' && lead.status === 'closed-lost' ? 'text-red-500' : ''}>{stage.label}</span>
                                     </div>
-                                )}
-                            </div>
+                                    {isCurrent && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary-500 rounded-full mb-1"></div>}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </Card>
+            </div>
 
-                            {/* Comment Input */}
-                            <form onSubmit={handleAddComment} className="flex gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
-                                <input
-                                    type="text"
-                                    value={newComment}
-                                    onChange={(e) => setNewComment(e.target.value)}
-                                    placeholder="Type a note or comment..."
-                                    className="input bg-gray-50 dark:bg-gray-800/50 border-0 focus:ring-2 focus:ring-primary-100"
-                                />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* LEFT: INFO */}
+                <div className="space-y-6">
+                    <Card>
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Contact Info</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3 text-sm">
+                                <div className="p-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 rounded-lg"><Phone size={16} /></div>
+                                <span className="font-medium">{lead.phone || 'No phone'}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                                <div className="p-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-lg"><Mail size={16} /></div>
+                                <span className="font-medium">{lead.email || 'No email'}</span>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {lead.closed_lost_reason && (
+                        <Card className="border-red-100 bg-red-50/50 dark:border-red-900/30 dark:bg-red-900/10">
+                            <h3 className="text-sm font-bold text-red-500 uppercase tracking-wider mb-2">Lost Reason</h3>
+                            <p className="text-red-700 dark:text-red-400 font-medium">{lead.closed_lost_reason}</p>
+                        </Card>
+                    )}
+                </div>
+
+                {/* RIGHT: ACTIVITY TIMELINE */}
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="!p-0 overflow-hidden">
+                        {/* ACTIVITY INPUT TABS */}
+                        <div className="bg-gray-50/80 dark:bg-gray-800/30 p-2 flex gap-2 border-b border-gray-100 dark:border-gray-800">
+                            {['note', 'call', 'meeting'].map(type => (
+                                <button
+                                    key={type}
+                                    onClick={() => setActivityType(type)}
+                                    className={`
+                                        flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all
+                                        ${activityType === type
+                                            ? 'bg-white dark:bg-dark-surface shadow-sm text-primary-600'
+                                            : 'text-gray-500 hover:bg-white/50'
+                                        }
+                                    `}
+                                >
+                                    {type === 'note' && <FileText size={14} />}
+                                    {type === 'call' && <Phone size={14} />}
+                                    {type === 'meeting' && <User size={14} />}
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+                        <form onSubmit={handleAddActivity} className="p-4">
+                            <textarea
+                                value={activityContent}
+                                onChange={(e) => setActivityContent(e.target.value)}
+                                placeholder={`Add a ${activityType}...`}
+                                className="w-full bg-transparent border-0 focus:ring-0 p-0 text-sm min-h-[80px] resize-none placeholder-gray-400"
+                            />
+                            <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                <div className="text-xs text-gray-400 font-medium">Author: Me</div>
                                 <button
                                     type="submit"
-                                    className="btn btn-primary px-4 aspect-square flex items-center justify-center rounded-xl"
-                                    disabled={!newComment.trim()}
+                                    disabled={!activityContent.trim()}
+                                    className="btn btn-primary py-1.5 px-4 text-xs"
                                 >
-                                    <Send size={18} />
+                                    Add Activity
                                 </button>
-                            </form>
-                        </Card>
+                            </div>
+                        </form>
+                    </Card>
+
+                    <div className="relative pl-6 space-y-8 before:absolute before:inset-y-0 before:left-2 before:w-[2px] before:bg-gray-100 dark:before:bg-gray-800">
+                        {activities.map((activity) => (
+                            <div key={activity.id} className="relative">
+                                <div className={`
+                                    absolute top-1 left-[-29px] w-8 h-8 rounded-full border-4 border-white dark:border-dark-bg flex items-center justify-center z-10
+                                    ${activity.type === 'call' ? 'bg-blue-100 text-blue-600' :
+                                        activity.type === 'meeting' ? 'bg-purple-100 text-purple-600' :
+                                            activity.type === 'status_change' ? 'bg-amber-100 text-amber-600' :
+                                                'bg-gray-100 text-gray-600'}
+                                `}>
+                                    {activity.type === 'call' ? <Phone size={14} /> :
+                                        activity.type === 'meeting' ? <User size={14} /> :
+                                            activity.type === 'status_change' ? <Clock size={14} /> :
+                                                <FileText size={14} />}
+                                </div>
+                                <div className="bg-white dark:bg-dark-surface p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">{activity.title}</h4>
+                                            <p className="text-xs text-gray-500 mt-0.5">{activity.author || 'System'}</p>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded">
+                                            {formatDate(activity.created_at)}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                        {activity.description}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {/* Edit Modal */}
-            {showEditModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-enter relative">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Edit Lead</h2>
-                            <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleUpdate}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Name *</label>
+            {/* MODALS */}
+
+            {/* 1. Proposal Modal */}
+            {showProposalModal && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <Card className="w-full max-w-md animate-enter">
+                        <h2 className="text-lg font-bold mb-4">Attach Proposal</h2>
+                        <form onSubmit={handleSubmitProposal} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Proposal File (Required)</label>
+                                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer relative"
+                                    onClick={() => document.getElementById('prop-upload').click()}
+                                >
+                                    <Upload className="mx-auto text-gray-400 mb-2" />
+                                    <p className="text-sm font-medium text-gray-600">
+                                        {proposalFile ? proposalFile.name : 'Click to upload PDF'}
+                                    </p>
                                     <input
-                                        type="text"
+                                        id="prop-upload"
+                                        type="file"
+                                        accept=".pdf,.doc,.docx"
+                                        className="hidden"
                                         required
-                                        value={editFormData.name || ''}
-                                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                        className="input"
+                                        onChange={(e) => setProposalFile(e.target.files[0])}
                                     />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Email</label>
-                                    <input
-                                        type="email"
-                                        value={editFormData.email || ''}
-                                        onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                                        className="input"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Phone</label>
-                                    <input
-                                        type="tel"
-                                        value={editFormData.phone || ''}
-                                        onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                                        className="input"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Role</label>
-                                    <input
-                                        type="text"
-                                        value={editFormData.role || ''}
-                                        onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
-                                        className="input"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Company</label>
-                                    <input
-                                        type="text"
-                                        value={editFormData.company || ''}
-                                        onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
-                                        className="input"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Status</label>
-                                    <div className="relative">
-                                        <select
-                                            value={editFormData.status || 'new'}
-                                            onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                                            className="input appearance-none cursor-pointer"
-                                        >
-                                            <option value="new">New</option>
-                                            <option value="negotiation">Negotiation</option>
-                                            <option value="follow-up">Follow-up</option>
-                                        </select>
-                                    </div>
                                 </div>
                             </div>
-                            <div className="flex gap-3 mt-8">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowEditModal(false)}
-                                    className="flex-1 btn btn-secondary text-xs uppercase tracking-wider"
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className="flex-1 btn btn-primary text-xs uppercase tracking-wider">
-                                    Save Changes
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Note (Optional)</label>
+                                <textarea
+                                    className="input min-h-[80px]"
+                                    placeholder="Add a note about this proposal..."
+                                    value={proposalNote}
+                                    onChange={(e) => setProposalNote(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <button type="button" onClick={() => setShowProposalModal(false)} className="btn btn-secondary flex-1">Cancel</button>
+                                <button type="submit" disabled={!proposalFile || isUploading} className="btn btn-primary flex-1">
+                                    {isUploading ? 'Uploading...' : 'Confirm & Send'}
                                 </button>
                             </div>
                         </form>
-                    </div>
+                    </Card>
+                </div>
+            )}
+
+            {/* 2. Lost Reason Modal */}
+            {showLostModal && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <Card className="w-full max-w-md animate-enter">
+                        <h2 className="text-lg font-bold mb-4 text-red-600">Mark as Closed Lost</h2>
+                        <form onSubmit={handleSubmitLost} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Reason (Mandatory)</label>
+                                <select
+                                    className="input"
+                                    required
+                                    value={lostReason}
+                                    onChange={(e) => setLostReason(e.target.value)}
+                                >
+                                    <option value="">Select a reason...</option>
+                                    {LOST_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                </select>
+                            </div>
+                            {lostReason === 'Other' && (
+                                <div>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        placeholder="Please specify..."
+                                        required
+                                        value={otherReason}
+                                        onChange={(e) => setOtherReason(e.target.value)}
+                                    />
+                                </div>
+                            )}
+                            <div className="flex gap-2 pt-2">
+                                <button type="button" onClick={() => setShowLostModal(false)} className="btn btn-secondary flex-1">Cancel</button>
+                                <button type="submit" disabled={!lostReason} className="btn bg-red-600 text-white hover:bg-red-700 flex-1">Confirm Lost</button>
+                            </div>
+                        </form>
+                    </Card>
+                </div>
+            )}
+
+            {/* 3. Project Conversion Modal */}
+            {showConvertModal && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <Card className="w-full max-w-lg animate-enter max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-lg font-bold mb-4">Convert to Project</h2>
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-500 mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                Please upload the required documents to verify this deal before converting to a project.
+                            </p>
+
+                            {['scope', 'agreement', 'contract', 'pricing'].map(doc => (
+                                <div key={doc} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl bg-gray-50">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-full ${conversionDocs[doc] ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}>
+                                            {conversionDocs[doc] ? <CheckCircle size={16} /> : <FileText size={16} />}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-sm capitalize">{doc} Document</p>
+                                            <p className="text-xs text-gray-400">{conversionDocs[doc] ? conversionDocs[doc].name : 'Required'}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        className="btn btn-secondary py-1 text-xs"
+                                        onClick={() => document.getElementById(`doc-${doc}`).click()}
+                                    >
+                                        {conversionDocs[doc] ? 'Change' : 'Upload'}
+                                    </button>
+                                    <input
+                                        id={`doc-${doc}`}
+                                        type="file"
+                                        className="hidden"
+                                        onChange={(e) => setConversionDocs(prev => ({ ...prev, [doc]: e.target.files[0] }))}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex gap-2 pt-6 mt-4 border-t border-gray-100">
+                            <button onClick={() => setShowConvertModal(false)} className="btn btn-secondary flex-1">Cancel</button>
+                            <button
+                                onClick={handleConvertToProject}
+                                disabled={isUploading}
+                                className="btn btn-primary flex-1"
+                            >
+                                {isUploading ? 'Verifying & Creating...' : 'Verify & Create Project'}
+                            </button>
+                        </div>
+                    </Card>
+                </div>
+            )}
+
+            {/* 4. Edit Lead Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <Card className="w-full max-w-md animate-enter">
+                        <h2 className="text-lg font-bold mb-4">Edit Lead</h2>
+                        <form onSubmit={handleUpdateLead} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Name</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={editForm.name}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Email</label>
+                                <input
+                                    type="email"
+                                    className="input"
+                                    value={editForm.email}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Phone</label>
+                                <input
+                                    type="tel"
+                                    className="input"
+                                    value={editForm.phone}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Role</label>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        value={editForm.role}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, role: e.target.value }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Company</label>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        value={editForm.company}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, company: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <button type="button" onClick={() => setShowEditModal(false)} className="btn btn-secondary flex-1">Cancel</button>
+                                <button type="submit" className="btn btn-primary flex-1">Save Changes</button>
+                            </div>
+                        </form>
+                    </Card>
                 </div>
             )}
         </MainLayout>

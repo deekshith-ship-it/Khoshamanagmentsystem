@@ -55,8 +55,8 @@ router.post('/', async (req, res) => {
     try {
         const { title, client, status, progress, tasks, assignee } = req.body;
         const result = await db.execute({
-            sql: 'INSERT INTO projects (title, client, status, progress, tasks, assignee, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now")) RETURNING *',
-            args: [title, client, status || 'in-progress', progress || 0, tasks || 0, assignee]
+            sql: 'INSERT INTO projects (title, client, status, progress, tasks, assignee, scope_url, agreement_url, contract_url, pricing_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now")) RETURNING *',
+            args: [title, client, status || 'in-progress', progress || 0, tasks || 0, assignee, req.body.scope_url, req.body.agreement_url, req.body.contract_url, req.body.pricing_url]
         });
         res.status(201).json(result.rows[0]);
     } catch (error) {
@@ -69,8 +69,8 @@ router.put('/:id', async (req, res) => {
     try {
         const { title, client, status, progress, tasks, assignee } = req.body;
         const result = await db.execute({
-            sql: 'UPDATE projects SET title = ?, client = ?, status = ?, progress = ?, tasks = ?, assignee = ?, updated_at = datetime("now") WHERE id = ? RETURNING *',
-            args: [title, client, status, progress, tasks, assignee, req.params.id]
+            sql: 'UPDATE projects SET title = ?, client = ?, status = ?, progress = ?, tasks = ?, assignee = ?, scope_url = ?, agreement_url = ?, contract_url = ?, pricing_url = ?, updated_at = datetime("now") WHERE id = ? RETURNING *',
+            args: [title, client, status, progress, tasks, assignee, req.body.scope_url, req.body.agreement_url, req.body.contract_url, req.body.pricing_url, req.params.id]
         });
         res.json(result.rows[0]);
     } catch (error) {

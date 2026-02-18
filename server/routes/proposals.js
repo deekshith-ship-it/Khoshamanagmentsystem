@@ -18,8 +18,8 @@ router.post('/', async (req, res) => {
     try {
         const { title, client, value } = req.body;
         const result = await db.execute({
-            sql: 'INSERT INTO proposals (title, client, value, views, created_at) VALUES (?, ?, ?, 0, datetime("now")) RETURNING *',
-            args: [title, client, value || 0]
+            sql: 'INSERT INTO proposals (title, client, value, lead_id, file_url, notes, status, views, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, datetime("now")) RETURNING *',
+            args: [title, client, value || 0, req.body.lead_id || null, req.body.file_url || null, req.body.notes || null, req.body.status || 'draft']
         });
         res.status(201).json(result.rows[0]);
     } catch (error) {
@@ -33,8 +33,8 @@ router.put('/:id', async (req, res) => {
     try {
         const { title, client, value, views } = req.body;
         const result = await db.execute({
-            sql: 'UPDATE proposals SET title = ?, client = ?, value = ?, views = ?, updated_at = datetime("now") WHERE id = ? RETURNING *',
-            args: [title, client, value, views, req.params.id]
+            sql: 'UPDATE proposals SET title = ?, client = ?, value = ?, status = ?, file_url = ?, notes = ?, views = ?, updated_at = datetime("now") WHERE id = ? RETURNING *',
+            args: [title, client, value, req.body.status, req.body.file_url, req.body.notes, views, req.params.id]
         });
         res.json(result.rows[0]);
     } catch (error) {

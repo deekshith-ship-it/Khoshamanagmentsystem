@@ -50,8 +50,8 @@ router.put('/:id', async (req, res) => {
     try {
         const { name, email, phone, role, company, status } = req.body;
         const result = await db.execute({
-            sql: 'UPDATE leads SET name = ?, email = ?, phone = ?, role = ?, company = ?, status = ?, updated_at = datetime("now") WHERE id = ? RETURNING *',
-            args: [name, email, phone, role, company, status, req.params.id]
+            sql: 'UPDATE leads SET name = ?, email = ?, phone = ?, role = ?, company = ?, status = ?, closed_lost_reason = ?, updated_at = datetime("now") WHERE id = ? RETURNING *',
+            args: [name, email, phone, role, company, status, req.body.closed_lost_reason || null, req.params.id]
         });
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Lead not found' });
@@ -136,8 +136,8 @@ router.post('/:leadId/activities', async (req, res) => {
     try {
         const { type, title, description } = req.body;
         const result = await db.execute({
-            sql: 'INSERT INTO lead_activities (lead_id, type, title, description, created_at) VALUES (?, ?, ?, ?, datetime("now")) RETURNING *',
-            args: [req.params.leadId, type, title, description]
+            sql: 'INSERT INTO lead_activities (lead_id, type, title, description, author, created_at) VALUES (?, ?, ?, ?, ?, datetime("now")) RETURNING *',
+            args: [req.params.leadId, type, title, description, req.body.author || 'System']
         });
         res.status(201).json(result.rows[0]);
     } catch (error) {

@@ -10,7 +10,12 @@ const statusStyles = {
     'follow-up': 'badge-follow-up',
     'new': 'badge-new',
     'negotiation': 'badge-warning',
-    'converted': 'badge-success',
+    'qualified': 'badge-primary',
+    'proposal-sent': 'badge-sent',
+    'closed-won': 'badge-success',
+    'closed-lost': 'badge-danger',
+    'converted': 'badge-success', // Keep for compatibility
+    'completed': 'badge-success', // Keep for compatibility
     'viewed': 'badge-neutral',
     'accepted': 'badge-success',
     'blocked': 'badge-blocked',

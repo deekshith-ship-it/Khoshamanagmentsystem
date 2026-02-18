@@ -73,7 +73,7 @@ const Dashboard = () => {
             };
 
             setStats({
-                leads: leads.filter(l => l.status !== 'completed').length,
+                leads: leads.filter(l => !['closed-won', 'closed-lost', 'completed', 'converted'].includes(l.status)).length,
                 proposals: proposals ? proposals.filter(p => !p.status || p.status === 'sent').length : 0,
                 projects: projects.filter(p => p.status === 'in-progress').length,
                 tasks: taskStats,
