@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
 import { Card, Avatar, StatusBadge } from '../components/common';
-import { ArrowLeft, Phone, Mail, MessageCircle, Eye, Clock, Send, Link2, PhoneOutgoing, X, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MessageCircle, Clock, Send, Link2, X, ArrowRight } from 'lucide-react';
 import { leadsAPI, leadCommentsAPI, leadActivitiesAPI, proposalsAPI, projectsAPI } from '../services/api';
 
 const LeadDetails = () => {
@@ -127,14 +127,7 @@ const LeadDetails = () => {
         }).format(value);
     };
 
-    const getActivityIcon = (type) => {
-        switch (type) {
-            case 'link_opened': return <Eye size={16} className="text-blue-500" />;
-            case 'call': return <PhoneOutgoing size={16} className="text-green-500" />;
-            case 'email': return <Mail size={16} className="text-purple-500" />;
-            default: return <Clock size={16} className="text-gray-500" />;
-        }
-    };
+
 
     if (loading) {
         return (

@@ -1,131 +1,99 @@
-[![Netlify Status](https://api.netlify.com/api/v1/badges/97cf12f3-7d34-4243-b5ed-77bc25a03e43/deploy-status)](https://app.netlify.com/projects/friendly-pegasus-99eef2/deploys)
-# Khosha Admin Dashboard
+# Khosha Management System
 
-A modern, responsive admin dashboard built with React and Tailwind CSS.
-
-## Quick Start
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm start
-```
-
-The app runs at `http://localhost:3000`
+A full-stack business management dashboard built with React + Express + Turso (SQLite).
 
 ## Project Structure
 
 ```
-src/
-├── components/
-│   ├── common/          # Reusable components
-│   │   ├── Avatar.jsx
-│   │   ├── Card.jsx
-│   │   ├── FilterPills.jsx
-│   │   ├── FloatingAddButton.jsx
-│   │   ├── SearchInput.jsx
-│   │   ├── StatsCard.jsx
-│   │   └── StatusBadge.jsx
-│   └── layout/
-│       ├── MainLayout.jsx
-│       └── Sidebar.jsx
-├── data/
-│   └── sampleData.js    # Mock data
-├── pages/
-│   ├── Dashboard.jsx
-│   ├── GeneralTasks.jsx
-│   ├── Infra.jsx
-│   ├── Leads.jsx
-│   ├── Links.jsx
-│   ├── Projects.jsx
-│   ├── Proposals.jsx
-│   └── Team.jsx
-├── App.js
-└── index.css
+khoshamanagment/
+├── public/                  # Static assets (favicon, logo, index.html)
+├── server/                  # Express.js backend
+│   ├── db.js                # Database connection (Turso)
+│   ├── index.js             # Express app entry point
+│   ├── schema.sql           # Full database schema + seed data
+│   └── routes/              # API route handlers
+│       ├── health.js        # Health check endpoint
+│       ├── leads.js         # Leads CRUD + comments/activities
+│       ├── proposals.js     # Proposals CRUD
+│       ├── projects.js      # Projects CRUD + tasks/notes/assets
+│       ├── tasks.js         # General tasks (unified view)
+│       ├── infra.js         # Infrastructure assets
+│       ├── links.js         # Trackable links
+│       ├── employees.js     # Employee management
+│       ├── agreements.js    # Business agreements
+│       ├── auth.js          # Authentication (OTP + email)
+│       └── team.js          # Team members & work sessions
+├── src/                     # React frontend
+│   ├── index.js             # React entry point
+│   ├── index.css            # Global styles (Tailwind + custom)
+│   ├── App.js               # Routes & app shell
+│   ├── services/            # API client
+│   │   └── api.js           # Centralized fetch helper
+│   ├── context/             # React context providers
+│   │   └── ThemeContext.jsx  # Dark/light theme
+│   ├── components/          # Reusable UI components
+│   │   ├── common/          # Shared components (Card, Avatar, etc.)
+│   │   └── layout/          # Layout components (MainLayout, Sidebar)
+│   └── pages/               # Page components
+│       ├── Dashboard.jsx
+│       ├── Leads.jsx
+│       ├── LeadDetails.jsx
+│       ├── Proposals.jsx
+│       ├── Projects.jsx
+│       ├── ProjectDetails.jsx
+│       ├── GeneralTasks.jsx
+│       ├── AddTask.jsx
+│       ├── Infra.jsx
+│       ├── AddInfra.jsx
+│       ├── Links.jsx
+│       ├── Team.jsx
+│       ├── Onboarding.jsx
+│       ├── Billing.jsx
+│       ├── Contracts.jsx
+│       ├── Settings.jsx
+│       ├── Login.jsx
+│       └── index.js         # Barrel exports
+├── netlify/                 # Netlify deployment
+│   └── functions/
+│       └── api.js           # Serverless function wrapper
+├── netlify.toml             # Netlify config (redirects, build)
+├── .env                     # Environment variables (not in git)
+├── .env.example             # Example env file
+├── tailwind.config.js       # Tailwind CSS config
+├── postcss.config.js        # PostCSS config
+└── package.json             # Dependencies & scripts
 ```
 
-## Design Tokens
+## Getting Started
 
-### Colors
-| Name | Hex | Usage |
-|------|-----|-------|
-| Primary | `#2B6EF6` | CTAs, active states |
-| Background | `#F5F7FA` | Page background |
-| Success | `#22C55E` | Completed badges |
-| Gray 500 | `#6B7280` | Muted text |
-| Gray 600 | `#4B5563` | Body text |
+### Prerequisites
+- Node.js 18+
+- A Turso database with credentials
 
-### Typography
-- **Font**: Inter
-- **Headline**: Bold (700), 48px
-- **Body**: 14-16px
-- **Meta**: 12px
+### Setup
+1. Clone the repo
+2. Install dependencies: `npm install`
+3. Copy `.env.example` to `.env` and fill in your Turso credentials
+4. Start the app: `npm run dev` (Database initializes automatically)
 
-### Spacing
-- **Baseline**: 16px
-- **Card padding**: 20-28px
-- **Card gutters**: 24px
-- **Page padding**: 32-48px
+### Development
+```bash
+# Start both frontend (port 3000) and backend (port 5000)
+npm run dev
 
-### Components
-- **Card border-radius**: 12px
-- **Card shadow**: `0 8px 20px rgba(30,35,40,0.04)`
-- **Pill border-radius**: 20px
-- **FAB size**: 56px
-
-## Responsive Breakpoints
-
-| Breakpoint | Sidebar | Grid |
-|------------|---------|------|
-| Desktop (1440px+) | Full (260px) | 3 columns |
-| Tablet (768-1439px) | Icon-only | 2 columns |
-| Mobile (<768px) | Off-canvas | 1 column |
-
-## Pages
-
-1. **Dashboard** - KPI cards, activity timeline, interest signals
-2. **Leads** - Filterable lead list with status badges
-3. **Proposals** - Stats cards and proposal tracking
-4. **Projects** - Project cards with progress bars
-5. **Infra** - Infrastructure asset management
-6. **General Tasks** - Task grid with filters
-7. **Links** - Trackable link generator
-8. **Team** - Team activity and daily log
-
-## Component Props
-
-### Card
-```jsx
-<Card 
-  padding="default|sm|lg|xl|none"
-  hover={true|false}
-  onClick={fn}
-/>
+# Or run them separately:
+npm run server   # Backend only (port 5000)
+npm start        # Frontend only (port 3000)
 ```
 
-### StatusBadge
-```jsx
-<StatusBadge status="todo|in-progress|completed|sent|draft|active" />
-```
+### Deployment (Netlify)
+The app is configured for Netlify deployment:
+- Frontend: Built by `npm run build`, served from `/build`
+- Backend: Wrapped as a Netlify serverless function via `netlify/functions/api.js`
+- API calls: Redirected from `/api/*` to the serverless function
 
-### FilterPills
-```jsx
-<FilterPills 
-  options={[{ value: 'all', label: 'All' }]}
-  value="all"
-  onChange={(value) => {}}
-/>
-```
-
-### Avatar
-```jsx
-<Avatar 
-  name="John Doe"
-  size="xs|sm|md|lg|xl"
-  color="default|primary|success"
-  showStatus={true}
-  isOnline={true}
-/>
-```
+## Tech Stack
+- **Frontend**: React 19, React Router 7, Lucide Icons, Tailwind CSS
+- **Backend**: Express.js
+- **Database**: Turso (LibSQL / SQLite)
+- **Deployment**: Netlify (static + serverless functions)

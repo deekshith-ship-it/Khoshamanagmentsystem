@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const StatsCard = ({
     title,
@@ -9,8 +9,6 @@ const StatsCard = ({
     className = ''
 }) => {
     const [displayValue, setDisplayValue] = useState(0);
-    const [isVisible, setIsVisible] = useState(false);
-    const cardRef = useRef(null);
 
     // Animated count-up effect
     useEffect(() => {
@@ -20,7 +18,7 @@ const StatsCard = ({
             return;
         }
 
-        setIsVisible(true);
+
         const duration = 600;
         const startTime = Date.now();
 
@@ -40,7 +38,7 @@ const StatsCard = ({
     }, [value]);
 
     return (
-        <div ref={cardRef} className={`card card-hover p-5 lg:p-6 group ${className}`}>
+        <div className={`card card-hover p-5 lg:p-6 group ${className}`}>
             <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-2">
