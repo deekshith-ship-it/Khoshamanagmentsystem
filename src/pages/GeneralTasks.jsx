@@ -9,6 +9,7 @@ const GeneralTasks = () => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [assigneeFilter, setAssigneeFilter] = useState('All Assignees');
+    const [sourceFilter, setSourceFilter] = useState('ALL');
 
     useEffect(() => {
         fetchTasks();
@@ -26,10 +27,15 @@ const GeneralTasks = () => {
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (task) => {
+        if (task.source === 'project') {
+            alert('Project tasks must be managed from their respective project details page.');
+            return;
+        }
+
         if (window.confirm('Are you sure you want to delete this task?')) {
             try {
-                await tasksAPI.delete(id);
+                await tasksAPI.delete(task.id);
                 fetchTasks();
             } catch (error) {
                 console.error('Error deleting task:', error);
@@ -39,9 +45,15 @@ const GeneralTasks = () => {
 
     const allAssignees = ['All Assignees', ...new Set(tasks.map(t => t.assignee).filter(Boolean))];
 
-    const filteredTasks = assigneeFilter === 'All Assignees'
-        ? tasks
-        : tasks.filter(t => t.assignee === assigneeFilter);
+    const sourceFilters = ['ALL', 'PROJECT TASKS', 'GENERAL TASKS'];
+
+    const filteredTasks = tasks.filter(task => {
+        const matchesAssignee = assigneeFilter === 'All Assignees' || task.assignee === assigneeFilter;
+        let matchesSource = true;
+        if (sourceFilter === 'PROJECT TASKS') matchesSource = task.source === 'project';
+        if (sourceFilter === 'GENERAL TASKS') matchesSource = task.source === 'general';
+        return matchesAssignee && matchesSource;
+    });
 
     return (
         <MainLayout
@@ -53,8 +65,24 @@ const GeneralTasks = () => {
                 </Link>
             }
         >
-            {/* Filter Bar */}
-            <div className="flex items-center gap-2 mb-8 overflow-x-auto custom-scrollbar">
+            {/* Source Filter Tabs - Part 2 Enhancement */}
+            <div className="bg-white/50 dark:bg-dark-surface/50 backdrop-blur-sm rounded-xl border border-gray-100 dark:border-dark-border p-1.5 mb-6 inline-flex overflow-x-auto max-w-full">
+                {sourceFilters.map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setSourceFilter(tab)}
+                        className={`px-6 py-2.5 rounded-lg text-[11px] font-bold tracking-widest transition-all duration-300 min-w-max ${sourceFilter === tab
+                                ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        {tab}
+                    </button>
+                ))}
+            </div>
+
+            {/* Assignee Filter Bar */}
+            <div className="flex items-center gap-2 mb-8 overflow-x-auto custom-scrollbar pb-1">
                 {allAssignees.map((name) => (
                     <button
                         key={name}
@@ -74,36 +102,49 @@ const GeneralTasks = () => {
             ) : (
                 <div className="space-y-4 stagger-children">
                     {filteredTasks.map((task) => (
-                        <Card key={task.id} className="group card-hover flex items-center justify-between hover:border-primary-200 dark:hover:border-primary-900/50 transition-all">
-                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                        <Card key={task.id} className="group card-hover flex items-center justify-between hover:border-primary-200 dark:hover:border-primary-900/50 transition-all border-l-4" style={{ borderLeftColor: task.source === 'project' ? '#6366f1' : 'transparent' }}>
+                            <div className="flex items-center gap-6 min-w-0 flex-1">
                                 <Avatar name={task.assignee} size="md" />
                                 <div className="min-w-0 flex-1">
-                                    <h3 className="font-bold text-gray-900 dark:text-white text-sm truncate">{task.title}</h3>
-                                    <div className="flex items-center gap-2 mt-1.5">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{task.assignee}</span>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="font-bold text-gray-900 dark:text-white text-sm truncate">{task.title}</h3>
+                                        {task.source === 'project' && (
+                                            <span className="text-[9px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded tracking-widest uppercase">
+                                                PROJECT
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide">{task.assignee}</span>
+                                        </div>
                                         {task.date && (
-                                            <>
-                                                <span className="text-gray-200 dark:text-gray-700">•</span>
-                                                <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                                                    <Calendar size={11} /> {task.date}
-                                                </span>
-                                            </>
+                                            <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 font-medium italic">
+                                                <Calendar size={10} /> {task.date}
+                                            </span>
+                                        )}
+                                        {task.project_title && (
+                                            <span className="text-[10px] text-gray-400 dark:text-gray-600 font-medium italic">
+                                                in {task.project_title}
+                                            </span>
                                         )}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-6">
                                 <StatusBadge status={task.status} />
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                    {task.source === 'general' && (
+                                        <button
+                                            onClick={() => alert('Edit coming soon!')}
+                                            className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all"
+                                        >
+                                            <Pencil size={14} />
+                                        </button>
+                                    )}
                                     <button
-                                        onClick={() => alert('Edit coming soon!')}
-                                        className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all"
-                                    >
-                                        <Pencil size={14} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(task.id)}
+                                        onClick={() => handleDelete(task)}
                                         className="p-2 text-gray-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-900/20 rounded-lg transition-all"
                                     >
                                         <Trash2 size={14} />
@@ -115,10 +156,11 @@ const GeneralTasks = () => {
 
                     {filteredTasks.length === 0 && (
                         <div className="text-center py-24 bg-gray-50/50 dark:bg-dark-surface rounded-2xl border border-dashed border-gray-200 dark:border-dark-border">
-                            <p className="text-gray-500 dark:text-gray-400 text-sm">No tasks found.</p>
-                            <Link to="/tasks/add" className="btn btn-primary mt-6 inline-flex items-center gap-2">
+                            <p className="text-gray-800 dark:text-gray-200 font-medium mb-2 text-lg">No tasks found in this view</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto mb-8">Try changing your filters or create a new general task.</p>
+                            <Link to="/tasks/add" className="btn btn-primary inline-flex items-center gap-2 px-8">
                                 <Plus size={18} />
-                                Create First Task
+                                Create New Task
                             </Link>
                         </div>
                     )}

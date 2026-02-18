@@ -564,13 +564,43 @@ app.delete('/api/projects/:projectId/assets/:assetId', async (req, res) => {
 });
 
 // ============== TASKS API ==============
+// ============== TASKS API (Step 2 - Unified Visibility) ==============
 app.get('/api/tasks', async (req, res) => {
     try {
-        const result = await db.execute('SELECT * FROM tasks ORDER BY created_at DESC');
-        res.json(result.rows);
+        // Fetch general tasks
+        const generalTasks = await db.execute('SELECT *, "general" as source FROM tasks ORDER BY created_at DESC');
+
+        // Fetch project tasks with project context
+        const projectTasks = await db.execute(`
+            SELECT 
+                pt.id, pt.title, pt.status, pt.date, pt.created_at, pt.project_id,
+                p.title as project_title, p.assignee as project_assignee,
+                "project" as source 
+            FROM project_tasks pt
+            JOIN projects p ON pt.project_id = p.id
+            ORDER BY pt.created_at DESC
+        `);
+
+        // Combine and normalize
+        const unifiedTasks = [
+            ...generalTasks.rows.map(t => ({
+                ...t,
+                assignee: t.assignee || 'Unassigned',
+                priority: t.priority || 'Medium'
+            })),
+            ...projectTasks.rows.map(t => ({
+                ...t,
+                id: `p${t.id}`, // Prefix to avoid ID collisions in list keys
+                realId: t.id,
+                assignee: t.project_assignee || 'Unassigned',
+                priority: 'Medium'
+            }))
+        ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        res.json(unifiedTasks);
     } catch (error) {
-        console.error('Error fetching tasks:', error);
-        res.status(500).json({ error: 'Failed to fetch tasks' });
+        console.error('Error fetching unified tasks:', error);
+        res.status(500).json({ error: 'Failed to fetch unified tasks' });
     }
 });
 
@@ -616,12 +646,44 @@ app.delete('/api/tasks/:id', async (req, res) => {
 });
 
 // ============== INFRA ASSETS API ==============
+// ============== INFRA ASSETS API (Step 1 - Relational Enhancement) ==============
 app.get('/api/infra', async (req, res) => {
     try {
-        const result = await db.execute('SELECT * FROM infra_assets ORDER BY created_at DESC');
-        res.json(result.rows);
+        // Fetch all assets
+        const assetsResult = await db.execute('SELECT * FROM infra_assets ORDER BY created_at DESC');
+        const assets = assetsResult.rows;
+
+        // Fetch all project-asset mappings to include nested projects
+        const mappingsResult = await db.execute(`
+            SELECT 
+                pa.asset_id, p.id as project_id, p.title, p.status, p.progress, p.assignee
+            FROM project_assets pa
+            JOIN projects p ON pa.project_id = p.id
+        `);
+
+        const mappings = mappingsResult.rows;
+
+        // Group projects by asset_id
+        const assetsWithProjects = assets.map(asset => {
+            const linkedProjects = mappings
+                .filter(m => m.asset_id === asset.id)
+                .map(m => ({
+                    id: m.project_id,
+                    title: m.title,
+                    status: m.status,
+                    progress: m.progress,
+                    assignee: m.assignee
+                }));
+
+            return {
+                ...asset,
+                projects: linkedProjects
+            };
+        });
+
+        res.json(assetsWithProjects);
     } catch (error) {
-        console.error('Error fetching infra assets:', error);
+        console.error('Error fetching infra assets with projects:', error);
         res.status(500).json({ error: 'Failed to fetch infra assets' });
     }
 });
