@@ -15,6 +15,15 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Pro-Dev Fix: Handle Netlify Function pathing
+app.use((req, res, next) => {
+    const netlifyPrefix = '/.netlify/functions/api';
+    if (req.url.startsWith(netlifyPrefix)) {
+        req.url = req.url.replace(netlifyPrefix, '');
+    }
+    next();
+});
+
 // Initialize Turso client
 const db = createClient({
     url: process.env.TURSO_DATABASE_URL,
