@@ -1,7 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@libsql/client');
-require('dotenv').config();
+
+// dotenv is only needed locally; on Netlify, env vars are injected by the platform
+try { require('dotenv').config(); } catch (e) { /* ignore in production */ }
 
 const app = express();
 const PORT = process.env.PORT || 5000;
