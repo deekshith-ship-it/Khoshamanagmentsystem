@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
-import { Card, StatusBadge } from '../components/common';
+import { Card, StatusBadge, FloatingAddButton } from '../components/common';
 import { Database, Globe, Server, Trash2, Plus, Box, Shield, Zap, Search, ArrowRight } from 'lucide-react';
 import { infraAPI } from '../services/api';
 
@@ -26,6 +26,7 @@ const typeLabels = {
 };
 
 const Infra = () => {
+    const navigate = useNavigate();
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('All Assets');
@@ -221,6 +222,7 @@ const Infra = () => {
                     </Link>
                 </div>
             )}
+            <FloatingAddButton onClick={() => navigate('/infra/add')} />
         </MainLayout>
     );
 };

@@ -367,7 +367,7 @@ const LeadDetails = () => {
 
             {/* Edit Modal */}
             {showEditModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 w-full max-w-md p-6 max-h-[90vh] overflow-y-auto animate-enter relative">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Edit Lead</h2>

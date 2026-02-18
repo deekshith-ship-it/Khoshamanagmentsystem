@@ -136,7 +136,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* 2️⃣ KPI Cards Row 1 - Sales & Projects */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6 stagger-children">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-4 md:mb-6 stagger-children">
                     <div onClick={() => navigate('/leads')} className="cursor-pointer">
                         <StatsCard
                             title="Active Leads"

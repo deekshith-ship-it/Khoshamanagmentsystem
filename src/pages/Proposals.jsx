@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../components/layout';
-import { Card, SearchInput } from '../components/common';
+import { Card, SearchInput, FloatingAddButton } from '../components/common';
 import { Eye, Clock, X, Plus } from 'lucide-react';
 import { proposalsAPI } from '../services/api';
 
@@ -185,9 +185,11 @@ const Proposals = () => {
                 )}
             </Card>
 
+            <FloatingAddButton onClick={() => setShowModal(true)} />
+
             {/* Add Proposal Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-md p-6 relative animate-enter"
                     >
                         <div className="flex items-center justify-between mb-6">

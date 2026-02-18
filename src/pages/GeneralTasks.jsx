@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
-import { Card, Avatar, StatusBadge } from '../components/common';
+import { Card, Avatar, StatusBadge, FloatingAddButton } from '../components/common';
 import { Pencil, Trash2, Calendar, Plus } from 'lucide-react';
 import { tasksAPI } from '../services/api';
 
 const GeneralTasks = () => {
+    const navigate = useNavigate();
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [assigneeFilter, setAssigneeFilter] = useState('All Assignees');
@@ -166,6 +167,7 @@ const GeneralTasks = () => {
                     )}
                 </div>
             )}
+            <FloatingAddButton onClick={() => navigate('/tasks/add')} />
         </MainLayout>
     );
 };
