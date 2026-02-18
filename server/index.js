@@ -1182,27 +1182,31 @@ app.get('/api/activity', async (req, res) => {
     }
 });
 
-// Start server
-const os = require('os');
-app.listen(PORT, '0.0.0.0', () => {
-    const interfaces = os.networkInterfaces();
-    const addresses = [];
-    for (const k in interfaces) {
-        for (const k2 in interfaces[k]) {
-            const address = interfaces[k][k2];
-            if (address.family === 'IPv4' && !address.internal) {
-                addresses.push(address.address);
+// Start server only when running directly (not as a function)
+if (require.main === module) {
+    const os = require('os');
+    app.listen(PORT, '0.0.0.0', () => {
+        const interfaces = os.networkInterfaces();
+        const addresses = [];
+        for (const k in interfaces) {
+            for (const k2 in interfaces[k]) {
+                const address = interfaces[k][k2];
+                if (address.family === 'IPv4' && !address.internal) {
+                    addresses.push(address.address);
+                }
             }
         }
-    }
 
-    console.log('\n' + '='.repeat(50));
-    console.log(`🚀 KOSHA BACKEND IS LIVE`);
-    console.log(`💻 Local:  http://localhost:${PORT}/api`);
-    addresses.forEach(ip => {
-        console.log(`📱 Mobile: http://${ip}:${PORT}/api`);
+        console.log('\n' + '='.repeat(50));
+        console.log(`🚀 KOSHA BACKEND IS LIVE`);
+        console.log(`💻 Local:  http://localhost:${PORT}/api`);
+        addresses.forEach(ip => {
+            console.log(`📱 Mobile: http://${ip}:${PORT}/api`);
+        });
+        console.log('='.repeat(50) + '\n');
+        console.log('💡 TIP: If mobile fails, ensure your Windows Firewall allows port 5000.');
     });
-    console.log('='.repeat(50) + '\n');
-    console.log('💡 TIP: If mobile fails, ensure your Windows Firewall allows port 5000.');
-});
+}
+
+module.exports = app;
 

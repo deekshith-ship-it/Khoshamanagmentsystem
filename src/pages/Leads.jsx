@@ -36,12 +36,7 @@ const Leads = () => {
             setLeads(data);
         } catch (error) {
             console.error('Error fetching leads:', error);
-            const isNetlify = window.location.hostname.includes('netlify.app');
-            const errorMessage = isNetlify
-                ? "You are on the Netlify link, but your database is still local. Please use your Local IP link (http://192.168.x.x:3000) on your phone to test locally."
-                : `Failed to fetch leads: ${error.message}. Ensure your phone and PC are on the same Wi-Fi.`;
-
-            setError(errorMessage);
+            setError(`Failed to fetch leads: ${error.message}. Please check your connection.`);
         } finally {
             setLoading(false);
         }

@@ -3,10 +3,10 @@
   publish = "build"
 
 [[redirects]]
-  # This rule handles the "Unexpected token <" error by proxying API calls 
-  # directly to your deployed backend instead of falling back to index.html.
+  # Pro-Dev Fix: This maps your API directly to Netlify Functions
+  # Now you don't need Render or any other hosting!
   from = "/api/*"
-  to = "https://your-backend-on-render.com/api/:splat" # REPLACE WITH YOUR RENDER URL
+  to = "/.netlify/functions/api/:splat"
   status = 200
   force = true
 
