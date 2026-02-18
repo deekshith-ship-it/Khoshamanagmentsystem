@@ -3,6 +3,15 @@
   publish = "build"
 
 [[redirects]]
+  # This rule handles the "Unexpected token <" error by proxying API calls 
+  # directly to your deployed backend instead of falling back to index.html.
+  from = "/api/*"
+  to = "https://your-backend-on-render.com/api/:splat" # REPLACE WITH YOUR RENDER URL
+  status = 200
+  force = true
+
+[[redirects]]
+  # SPA routing support
   from = "/*"
   to = "/index.html"
   status = 200

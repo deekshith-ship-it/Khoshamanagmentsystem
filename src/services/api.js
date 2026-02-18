@@ -1,24 +1,33 @@
-// Pro-grade dynamic API base URL detection
 const getApiBaseUrl = () => {
-    // 1. Manually set environment variable takes precedence
+    // 1. Manually set environment variable takes precedence (Critical for Production)
     if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
 
     const { hostname, protocol, port } = window.location;
 
-    // 2. In local development (localhost or local network IP)
-    // If we are accessing the frontend on port 3000, we point directly to the backend on port 5000
-    // This allows mobile devices to talk directly to the server without relying on the React proxy
-    if (port === '3000' || hostname !== 'localhost' && !hostname.includes('.')) {
-        return `${protocol}//${hostname}:5000/api`;
+    // 2. High-precision local network detection
+    const isLocal =
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('10.') ||
+        hostname.startsWith('172.') ||
+        hostname.endsWith('.local');
+
+    // 3. Fix for mobile access:
+    // If we're on a local network and using port 3000 (React),
+    // we MUST talk directly to port 5000 to bypass proxy issues.
+    if (isLocal && (port === '3000' || !port)) {
+        // Use the current hostname (IP or localhost) but switch to the backend port
+        const backendUrl = `${protocol}//${hostname}:5000/api`;
+        return backendUrl;
     }
 
-    // 3. For production or standard proxy setup
+    // 4. Default to relative path for production (Netlify/Vercel)
     return '/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
-
-console.log(`🌐 API Base URL initialized as: ${API_BASE_URL}`);
+console.log(`🌐 [Pro-Dev] API Service connecting to: ${API_BASE_URL}`);
 
 // Helper function for API calls
 async function fetchAPI(endpoint, options = {}) {
@@ -32,20 +41,25 @@ async function fetchAPI(endpoint, options = {}) {
         ...options,
     });
 
+    const contentType = response.headers.get('content-type');
+
     if (!response.ok) {
-        let errorMsg = 'Request failed';
-        try {
+        let errorMsg = `Server error (${response.status})`;
+        if (contentType && contentType.includes('application/json')) {
             const errorData = await response.json();
             errorMsg = errorData.error || errorMsg;
-        } catch (e) {
-            // If not JSON, try text
-            const text = await response.text().catch(() => '');
-            if (text) errorMsg = text.slice(0, 100);
+        } else {
+            const text = await response.text();
+            errorMsg = text.slice(0, 50) + '...';
         }
         throw new Error(errorMsg);
     }
 
-    return response.json();
+    if (contentType && contentType.includes('application/json')) {
+        return response.json();
+    }
+
+    throw new Error('Expected JSON response, but received HTML. This usually means the API path is incorrect or blocked.');
 }
 
 // ============== LEADS ==============
