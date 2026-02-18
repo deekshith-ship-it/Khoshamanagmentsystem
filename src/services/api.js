@@ -17,13 +17,13 @@ const getApiBaseUrl = () => {
     // If we're on a local network and using port 3000 (React),
     // we MUST talk directly to port 5000 to bypass proxy issues.
     if (isLocal && (port === '3000' || !port)) {
-        // Use the current hostname (IP or localhost) but switch to the backend port
         const backendUrl = `${protocol}//${hostname}:5000/api`;
         return backendUrl;
     }
 
-    // 4. Default to relative path for production (Netlify/Vercel)
-    return '/api';
+    // 4. Production: Call the Netlify Function directly
+    // This bypasses the redirect layer and talks to the function endpoint
+    return '/.netlify/functions/api/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
