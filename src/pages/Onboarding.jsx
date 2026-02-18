@@ -6,6 +6,7 @@ import {
     Building2, Briefcase, Loader2, MapPin, Calendar, CreditCard,
     Shield, Heart, Hash
 } from 'lucide-react';
+import { employeesAPI } from '../services/api';
 
 const emptyForm = {
     employeeName: '',
@@ -36,7 +37,6 @@ const Onboarding = () => {
     const [editingEmployee, setEditingEmployee] = useState(null);
     const [formData, setFormData] = useState({ ...emptyForm });
 
-    const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
     useEffect(() => {
         fetchEmployees();
@@ -46,11 +46,8 @@ const Onboarding = () => {
     const fetchEmployees = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_BASE}/employees`);
-            if (response.ok) {
-                const data = await response.json();
-                setEmployees(data);
-            }
+            const data = await employeesAPI.getAll();
+            setEmployees(data);
         } catch (error) {
             console.error('Error fetching employees:', error);
         } finally {
@@ -62,27 +59,17 @@ const Onboarding = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const url = editingEmployee
-                ? `${API_BASE}/employees/${editingEmployee.id}`
-                : `${API_BASE}/employees`;
-            const method = editingEmployee ? 'PUT' : 'POST';
-
-            const response = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-
-            if (response.ok) {
-                setShowModal(false);
-                resetForm();
-                fetchEmployees();
+            if (editingEmployee) {
+                await employeesAPI.update(editingEmployee.id, formData);
             } else {
-                const err = await response.json();
-                alert(err.error || 'Failed to save employee');
+                await employeesAPI.create(formData);
             }
+            setShowModal(false);
+            resetForm();
+            fetchEmployees();
         } catch (error) {
             console.error('Error saving employee:', error);
+            alert(error.message || 'Failed to save employee');
         } finally {
             setIsSubmitting(false);
         }
@@ -115,8 +102,8 @@ const Onboarding = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to remove this employee?')) return;
         try {
-            const response = await fetch(`${API_BASE}/employees/${id}`, { method: 'DELETE' });
-            if (response.ok) fetchEmployees();
+            await employeesAPI.delete(id);
+            fetchEmployees();
         } catch (error) {
             console.error('Error deleting employee:', error);
         }

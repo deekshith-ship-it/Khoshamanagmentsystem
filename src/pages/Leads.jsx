@@ -36,7 +36,12 @@ const Leads = () => {
             setLeads(data);
         } catch (error) {
             console.error('Error fetching leads:', error);
-            setError('Failed to fetch leads. Please check if the server is running.');
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const advice = isLocal
+                ? 'Check if your backend server is running on port 5000.'
+                : 'Ensure your phone and PC are on the same Wi-Fi and firewall is off.';
+
+            setError(`Failed to fetch leads: ${error.message}. ${advice}`);
         } finally {
             setLoading(false);
         }

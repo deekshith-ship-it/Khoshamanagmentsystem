@@ -1,11 +1,32 @@
-// API service for connecting to the backend
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+// Pro-grade dynamic API base URL detection
+const getApiBaseUrl = () => {
+    // 1. Manually set environment variable takes precedence
+    if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+
+    const { hostname, protocol, port } = window.location;
+
+    // 2. In local development (localhost or local network IP)
+    // If we are accessing the frontend on port 3000, we point directly to the backend on port 5000
+    // This allows mobile devices to talk directly to the server without relying on the React proxy
+    if (port === '3000' || hostname !== 'localhost' && !hostname.includes('.')) {
+        return `${protocol}//${hostname}:5000/api`;
+    }
+
+    // 3. For production or standard proxy setup
+    return '/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+console.log(`🌐 API Base URL initialized as: ${API_BASE_URL}`);
 
 // Helper function for API calls
 async function fetchAPI(endpoint, options = {}) {
+    const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
             'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
             ...options.headers,
         },
         ...options,
@@ -177,6 +198,23 @@ export const agreementsAPI = {
         body: JSON.stringify(data),
     }),
     delete: (id) => fetchAPI(`/agreements/${id}`, {
+        method: 'DELETE',
+    }),
+};
+
+// ============== EMPLOYEES ==============
+export const employeesAPI = {
+    getAll: () => fetchAPI('/employees'),
+    getById: (id) => fetchAPI(`/employees/${id}`),
+    create: (data) => fetchAPI('/employees', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    }),
+    update: (id, data) => fetchAPI(`/employees/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    }),
+    delete: (id) => fetchAPI(`/employees/${id}`, {
         method: 'DELETE',
     }),
 };

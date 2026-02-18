@@ -34,25 +34,18 @@ const Contracts = () => {
         description: '',
     });
 
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
     const fetchAgreements = useCallback(async () => {
         try {
             setLoading(true);
-            let data;
-            if (agreementsAPI && agreementsAPI.getAll) {
-                data = await agreementsAPI.getAll();
-            } else {
-                const response = await fetch(`${API_BASE}/agreements`);
-                data = response.ok ? await response.json() : [];
-            }
+            const data = await agreementsAPI.getAll();
             setAgreements(data);
         } catch (error) {
             console.error('Error fetching agreements:', error);
         } finally {
             setLoading(false);
         }
-    }, [API_BASE]);
+    }, []);
 
     useEffect(() => {
         fetchAgreements();
@@ -63,31 +56,16 @@ const Contracts = () => {
         setIsSubmitting(true);
         try {
             if (editingAgreement) {
-                if (agreementsAPI && agreementsAPI.update) {
-                    await agreementsAPI.update(editingAgreement.id, formData);
-                } else {
-                    await fetch(`${API_BASE}/agreements/${editingAgreement.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData),
-                    });
-                }
+                await agreementsAPI.update(editingAgreement.id, formData);
             } else {
-                if (agreementsAPI && agreementsAPI.create) {
-                    await agreementsAPI.create(formData);
-                } else {
-                    await fetch(`${API_BASE}/agreements`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData),
-                    });
-                }
+                await agreementsAPI.create(formData);
             }
             setShowModal(false);
             resetForm();
             fetchAgreements();
         } catch (error) {
             console.error('Error saving agreement:', error);
+            alert(error.message || 'Failed to save agreement');
         } finally {
             setIsSubmitting(false);
         }
@@ -111,11 +89,7 @@ const Contracts = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this agreement?')) return;
         try {
-            if (agreementsAPI && agreementsAPI.delete) {
-                await agreementsAPI.delete(id);
-            } else {
-                await fetch(`${API_BASE}/agreements/${id}`, { method: 'DELETE' });
-            }
+            await agreementsAPI.delete(id);
             fetchAgreements();
         } catch (error) {
             console.error('Error deleting agreement:', error);

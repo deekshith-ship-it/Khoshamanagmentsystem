@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
+import { authAPI } from '../../services/api';
 
 const MainLayout = ({ children, title, subtitle, headerAction }) => {
     const [collapsed, setCollapsed] = useState(false);
@@ -14,11 +15,7 @@ const MainLayout = ({ children, title, subtitle, headerAction }) => {
 
             const sendHeartbeat = async () => {
                 try {
-                    await fetch('/api/auth/heartbeat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId: user.id })
-                    });
+                    await authAPI.heartbeat(user.id);
                 } catch (err) {
                     console.error('Heartbeat failed', err);
                 }
