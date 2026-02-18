@@ -15,12 +15,27 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Pro-Dev Fix: Handle Netlify Function pathing
+// Bulletproof Path Normalizer for Netlify Functions
+// Handles ALL possible path formats that serverless-http might pass:
+// Case 1: /.netlify/functions/api/api/leads -> /api/leads
+// Case 2: /.netlify/functions/api/leads   -> /api/leads
+// Case 3: /api/leads                      -> /api/leads (no change)
+// Case 4: /leads                          -> /api/leads
 app.use((req, res, next) => {
+    let url = req.url;
+
+    // Strip Netlify function prefix if present
     const netlifyPrefix = '/.netlify/functions/api';
-    if (req.url.startsWith(netlifyPrefix)) {
-        req.url = req.url.replace(netlifyPrefix, '');
+    if (url.startsWith(netlifyPrefix)) {
+        url = url.substring(netlifyPrefix.length) || '/';
     }
+
+    // Ensure /api prefix exists (needed for Express route matching)
+    if (url !== '/' && !url.startsWith('/api')) {
+        url = '/api' + url;
+    }
+
+    req.url = url;
     next();
 });
 

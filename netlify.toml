@@ -1,17 +1,18 @@
 [build]
   command = "CI=false npm run build"
   publish = "build"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
 
 [[redirects]]
-  # Pro-Dev Fix: This maps your API directly to Netlify Functions
-  # Now you don't need Render or any other hosting!
   from = "/api/*"
-  to = "/.netlify/functions/api/api/:splat"
+  to = "/.netlify/functions/api/:splat"
   status = 200
   force = true
 
 [[redirects]]
-  # SPA routing support
   from = "/*"
   to = "/index.html"
   status = 200
