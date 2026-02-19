@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS proposals (
   lead_id INTEGER,
   value REAL DEFAULT 0,
   views INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'draft',
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT,
   FOREIGN KEY (lead_id) REFERENCES leads(id)
