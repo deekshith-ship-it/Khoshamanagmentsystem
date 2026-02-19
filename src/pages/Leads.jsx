@@ -75,7 +75,7 @@ const Leads = () => {
 
     return (
         <MainLayout
-            title="Sales Pipeline"
+            title="Leads"
             headerAction={
                 <div className="flex items-center gap-3">
                     <SearchInput
