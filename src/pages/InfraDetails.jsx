@@ -17,6 +17,14 @@ const InfraDetails = () => {
     const [allProjects, setAllProjects] = useState([]);
     const [showLinkModal, setShowLinkModal] = useState(false);
     const [selectedProjectId, setSelectedProjectId] = useState('');
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editData, setEditData] = useState({
+        name: '',
+        type: '',
+        server_type: '',
+        status: 'active',
+        metadata: {}
+    });
 
     const fetchDetails = useCallback(async () => {
         try {
@@ -27,6 +35,14 @@ const InfraDetails = () => {
             ]);
             setAsset(assetData);
             setAllProjects(projectsData || []);
+            // Initialize edit data
+            setEditData({
+                name: assetData.name || '',
+                type: assetData.type || '',
+                server_type: assetData.server_type || '',
+                status: assetData.status || 'active',
+                metadata: assetData.metadata || {}
+            });
         } catch (error) {
             console.error('Error fetching infra details:', error);
         } finally {
@@ -37,6 +53,18 @@ const InfraDetails = () => {
     useEffect(() => {
         fetchDetails();
     }, [fetchDetails]);
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        try {
+            await infraAPI.update(id, editData);
+            setShowEditModal(false);
+            fetchDetails();
+        } catch (error) {
+            console.error('Error updating asset:', error);
+            alert('Failed to update asset');
+        }
+    };
 
     const handleLinkProject = async () => {
         if (!selectedProjectId) return;
@@ -105,7 +133,7 @@ const InfraDetails = () => {
                         <button onClick={handleDelete} className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 text-gray-400 hover:text-danger-600 dark:hover:text-danger-400 transition-all">
                             <Trash2 size={20} />
                         </button>
-                        <button className="btn btn-primary px-6">Edit Details</button>
+                        <button onClick={() => setShowEditModal(true)} className="btn btn-primary px-6">Edit Details</button>
                     </div>
                 </div>
 
@@ -233,6 +261,112 @@ const InfraDetails = () => {
                 </div>
             </div>
 
+            {/* Edit Asset Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 overflow-hidden">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowEditModal(false)}></div>
+                    <div className="relative z-[1110] w-full max-w-2xl max-h-[90vh] bg-white dark:bg-dark-surface rounded-3xl flex flex-col overflow-hidden shadow-2xl animate-enter">
+                        <header className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-white/5">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Edit Infrastructure</h3>
+                            <button onClick={() => setShowEditModal(false)} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                        </header>
+
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                            <form id="edit-infra-form" onSubmit={handleUpdate} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1">Asset Name</label>
+                                        <input
+                                            type="text"
+                                            value={editData.name}
+                                            onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                                            className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-transparent focus:border-primary-500 outline-none transition-all text-sm"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1">Status</label>
+                                        <select
+                                            value={editData.status}
+                                            onChange={(e) => setEditData({ ...editData, status: e.target.value })}
+                                            className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-transparent focus:border-primary-500 outline-none transition-all text-sm appearance-none cursor-pointer"
+                                        >
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                            <option value="pending">Pending</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {editData.type === 'SERVER' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="flex flex-col gap-2">
+                                            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1">Server Type</label>
+                                            <select
+                                                value={editData.server_type}
+                                                onChange={(e) => setEditData({ ...editData, server_type: e.target.value })}
+                                                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-transparent focus:border-primary-500 outline-none transition-all text-sm appearance-none cursor-pointer"
+                                            >
+                                                <option value="Cloud Server">Cloud Server</option>
+                                                <option value="VPS Server">VPS Server</option>
+                                                <option value="Dedicated Server">Dedicated Server</option>
+                                                <option value="Shared Linux Server">Shared Linux Server</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Dynamic Metadata Fields */}
+                                <div className="pt-6 border-t border-gray-100 dark:border-white/5 space-y-4">
+                                    <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1">Metadata Configuration</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {editData.type === 'DOMAIN' && (
+                                            <>
+                                                <EditField label="Domain" value={editData.metadata.domain} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, domain: v } })} />
+                                                <EditField label="Registrar" value={editData.metadata.registrar} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, registrar: v } })} />
+                                                <EditField label="Expiry" type="date" value={editData.metadata.expiry} onChange={v => setEditData({ ...editData.metadata, expiry: v })} />
+                                                <EditField label="DNS Provider" value={editData.metadata.dnsProvider} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, dnsProvider: v } })} />
+                                            </>
+                                        )}
+                                        {editData.type === 'SERVER' && (
+                                            <>
+                                                <EditField label="Provider" value={editData.metadata.provider} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, provider: v } })} />
+                                                <EditField label="IP Address" value={editData.metadata.ip} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, ip: v } })} />
+                                                <EditField label="Panel" value={editData.metadata.panel} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, panel: v } })} />
+                                                <EditField label="Renewal" type="date" value={editData.metadata.renewal} onChange={v => setEditData({ ...editData.metadata, renewal: v })} />
+                                                <EditField label="Root Access" value={editData.metadata.rootAccess} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, rootAccess: v } })} />
+                                            </>
+                                        )}
+                                        {editData.type === 'EMAIL' && (
+                                            <>
+                                                <EditField label="Email" value={editData.metadata.email} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, email: v } })} />
+                                                <EditField label="Password" value={editData.metadata.password} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, password: v } })} />
+                                                <EditField label="Provider" value={editData.metadata.provider} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, provider: v } })} />
+                                                <EditField label="Linked Domain" value={editData.metadata.linkedDomain} onChange={v => setEditData({ ...editData, metadata: { ...editData.metadata, linkedDomain: v } })} />
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col gap-2 pt-2">
+                                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1">Admin Notes</label>
+                                        <textarea
+                                            value={editData.metadata.notes || ''}
+                                            onChange={(e) => setEditData({ ...editData, metadata: { ...editData.metadata, notes: e.target.value } })}
+                                            className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-transparent focus:border-primary-500 outline-none transition-all text-sm min-h-[100px] resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <footer className="p-6 bg-gray-50/50 dark:bg-white/5 border-t border-gray-100 dark:border-white/5 flex gap-3">
+                            <button onClick={() => setShowEditModal(false)} className="flex-1 btn btn-secondary py-3 text-xs tracking-widest font-bold">CANCEL</button>
+                            <button type="submit" form="edit-infra-form" className="flex-1 btn btn-primary py-3 text-xs tracking-widest font-bold shadow-lg shadow-primary-500/20">SAVE CHANGES</button>
+                        </footer>
+                    </div>
+                </div>
+            )}
+
             {/* Link Project Modal */}
             {showLinkModal && (
                 <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 overflow-hidden">
@@ -317,5 +451,17 @@ const DetailItem = ({ icon: Icon, label, value, copyable, secret }) => {
         </div>
     );
 };
+
+const EditField = ({ label, value = '', onChange, type = 'text' }) => (
+    <div className="flex flex-col gap-2">
+        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">{label}</label>
+        <input
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-transparent focus:border-primary-500 outline-none transition-all text-sm"
+        />
+    </div>
+);
 
 export default InfraDetails;

@@ -86,11 +86,27 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { text, status, project_id, notes, dependencies, credentials } = req.body;
+        const cleanValue = (val) => (val === undefined ? undefined : (val === '' ? null : val));
 
         await db.execute({
-            sql: 'UPDATE tasks SET text = ?, status = ?, project_id = ?, notes = ?, dependencies = ?, credentials = ?, updated_at = datetime("now") WHERE id = ?',
-            args: [text, status, project_id, notes, dependencies, credentials, id]
+            sql: `UPDATE tasks SET 
+                  text = COALESCE(?, text), 
+                  status = COALESCE(?, status), 
+                  project_id = COALESCE(?, project_id), 
+                  notes = COALESCE(?, notes), 
+                  dependencies = COALESCE(?, dependencies), 
+                  credentials = COALESCE(?, credentials), 
+                  updated_at = datetime("now") 
+                  WHERE id = ?`,
+            args: [
+                cleanValue(text) ?? null,
+                cleanValue(status) ?? null,
+                cleanValue(project_id) ?? null,
+                cleanValue(notes) ?? null,
+                cleanValue(dependencies) ?? null,
+                cleanValue(credentials) ?? null,
+                id
+            ]
         });
 
         // Update Project Progress if linked

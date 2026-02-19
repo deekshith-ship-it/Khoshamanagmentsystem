@@ -151,19 +151,35 @@ async function initializeDatabase() {
             )
         `);
 
-        // INFRA ASSETS TABLE
-        await db.execute(`
-            CREATE TABLE IF NOT EXISTS infra_assets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                type TEXT NOT NULL, -- DOMAIN, SERVER, EMAIL
-                server_type TEXT, -- Cloud, VPS, etc.
-                metadata TEXT, -- JSON string
-                status TEXT DEFAULT 'active',
-                created_at TEXT DEFAULT (datetime('now')),
-                updated_at TEXT DEFAULT (datetime('now'))
-            )
-        `);
+        // INFRA ASSETS TABLE ENHANCEMENTS
+        const infraInfo = await db.execute("PRAGMA table_info('infra_assets')");
+        if (infraInfo.rows.length === 0) {
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS infra_assets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    type TEXT NOT NULL, -- DOMAIN, SERVER, EMAIL
+                    server_type TEXT, -- Cloud, VPS, etc.
+                    metadata TEXT, -- JSON string
+                    status TEXT DEFAULT 'active',
+                    created_at TEXT DEFAULT (datetime('now')),
+                    updated_at TEXT DEFAULT (datetime('now'))
+                )
+            `);
+        } else {
+            if (!infraInfo.rows.some(c => c.name === 'server_type')) {
+                console.log('➕ Adding server_type column to infra_assets...');
+                await db.execute('ALTER TABLE infra_assets ADD COLUMN server_type TEXT');
+            }
+            if (!infraInfo.rows.some(c => c.name === 'metadata')) {
+                console.log('➕ Adding metadata column to infra_assets...');
+                await db.execute('ALTER TABLE infra_assets ADD COLUMN metadata TEXT');
+            }
+            if (!infraInfo.rows.some(c => c.name === 'status')) {
+                console.log('➕ Adding status column to infra_assets...');
+                await db.execute('ALTER TABLE infra_assets ADD COLUMN status TEXT DEFAULT "active"');
+            }
+        }
 
         // PROJECT INFRA TABLE (Many-to-Many Link)
         await db.execute(`
