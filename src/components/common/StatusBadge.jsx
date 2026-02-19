@@ -8,14 +8,18 @@ const statusStyles = {
     'draft': 'badge-draft',
     'active': 'badge-active',
     'follow-up': 'badge-follow-up',
+    'follow_up': 'badge-follow-up',
     'new': 'badge-new',
     'negotiation': 'badge-warning',
     'qualified': 'badge-primary',
-    'proposal-sent': 'badge-sent',
+    'proposal': 'badge-primary',
+    'proposal-sent': 'badge-primary',
+    'proposal_sent': 'badge-primary',
     'closed-won': 'badge-success',
+    'closed_won': 'badge-success',
     'closed-lost': 'badge-danger',
-    'converted': 'badge-success', // Keep for compatibility
-    'completed': 'badge-success', // Keep for compatibility
+    'closed_lost': 'badge-danger',
+    'converted': 'badge-success',
     'viewed': 'badge-neutral',
     'accepted': 'badge-success',
     'blocked': 'badge-blocked',
@@ -23,10 +27,10 @@ const statusStyles = {
 };
 
 const StatusBadge = ({ status, className = '' }) => {
-    const normalizedStatus = status?.toLowerCase().replace(/\s+/g, '-') || 'todo';
-    const styleClass = statusStyles[normalizedStatus] || 'badge-neutral';
+    const normalizedStatus = status?.toLowerCase().replace(/[\s_]+/g, '-') || 'todo';
+    const styleClass = statusStyles[status?.toLowerCase()] || statusStyles[normalizedStatus] || 'badge-neutral';
 
-    const displayText = status?.replace(/-/g, ' ').toUpperCase() || 'TO DO';
+    const displayText = status?.replace(/[_-]/g, ' ').toUpperCase() || 'TO DO';
 
     return (
         <span className={`badge ${styleClass} ${className}`}>

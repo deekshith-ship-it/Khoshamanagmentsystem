@@ -2,45 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
 import { Card, StatusBadge, FloatingAddButton } from '../components/common';
-import { Database, Globe, Server, Trash2, Plus, Box, Shield, Zap, Search, ArrowRight } from 'lucide-react';
+import { Globe, Server, Mail, Trash2, Plus, Search, ArrowRight, ExternalLink } from 'lucide-react';
 import { infraAPI } from '../services/api';
 
 const typeIcons = {
-    database: Database,
-    domain: Globe,
-    server: Server,
-    ssl: Shield,
-    cloud: Box,
-    api: Zap,
-};
-
-const typeLabels = {
-    database: 'DATABASE',
-    domain: 'DOMAIN',
-    server: 'SERVER / HOSTING',
-    cloud: 'CLOUD SERVICE',
-    email: 'EMAIL / SMTP',
-    api: 'API / TOOL',
-    storage: 'STORAGE / CDN',
-    ssl: 'SSL / SECURITY',
+    DOMAIN: Globe,
+    SERVER: Server,
+    EMAIL: Mail
 };
 
 const Infra = () => {
     const navigate = useNavigate();
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('All Assets');
+    const [activeTab, setActiveTab] = useState('All');
 
-    const tabs = [
-        'All Assets',
-        'Domains',
-        'Servers',
-        'Databases',
-        'Email',
-        'API',
-        'Storage',
-        'SSL'
-    ];
+    const tabs = ['All', 'Domain', 'Server', 'Email'];
 
     useEffect(() => {
         fetchAssets();
@@ -50,7 +27,7 @@ const Infra = () => {
         try {
             setLoading(true);
             const data = await infraAPI.getAll();
-            setAssets(data);
+            setAssets(data || []);
         } catch (error) {
             console.error('Error fetching infra assets:', error);
         } finally {
@@ -58,7 +35,8 @@ const Infra = () => {
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (e, id) => {
+        e.stopPropagation();
         if (window.confirm('Are you sure you want to delete this asset?')) {
             try {
                 await infraAPI.delete(id);
@@ -70,15 +48,8 @@ const Infra = () => {
     };
 
     const filteredAssets = assets.filter(asset => {
-        if (activeTab === 'All Assets') return true;
-        if (activeTab === 'Domains') return asset.type === 'domain';
-        if (activeTab === 'Servers') return asset.type === 'server';
-        if (activeTab === 'Databases') return asset.type === 'database';
-        if (activeTab === 'Email') return asset.type === 'email';
-        if (activeTab === 'API') return asset.type === 'api';
-        if (activeTab === 'Storage') return asset.type === 'storage';
-        if (activeTab === 'SSL') return asset.type === 'ssl';
-        return true;
+        if (activeTab === 'All') return true;
+        return asset.type === activeTab.toUpperCase();
     });
 
     return (
@@ -87,122 +58,78 @@ const Infra = () => {
             headerAction={
                 <Link to="/infra/add" className="btn btn-primary flex items-center gap-2">
                     <Plus size={18} />
-                    Add Infra
+                    New Infrastructure
                 </Link>
             }
         >
-            {/* Filter Navigation Bar */}
-            <div className="bg-white/50 dark:bg-dark-surface/50 rounded-xl border border-gray-100 dark:border-dark-border p-1.5 mb-8 overflow-x-auto">
-                <nav className="flex items-center min-w-max">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`filter-pill ${activeTab === tab ? 'active' : ''}`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
-                    <div
-                        onClick={() => alert('Search feature coming soon!')}
-                        className="ml-auto pr-4 flex items-center text-gray-400 hover:text-primary-600 cursor-pointer transition-colors"
+            {/* Tabs */}
+            <div className="flex gap-2 mb-8 p-1 bg-gray-100/50 dark:bg-white/[0.04] rounded-2xl w-fit">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeTab === tab
+                                ? 'bg-white dark:bg-[#1f2937] text-primary-600 dark:text-primary-400 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            }`}
                     >
-                        <Search size={18} />
-                    </div>
-                </nav>
+                        {tab}
+                    </button>
+                ))}
             </div>
 
             {loading ? (
-                <div className="card flex flex-col items-center justify-center py-32 text-center">
-                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-500 border-t-transparent mb-4"></div>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Loading assets...</p>
+                <div className="flex items-center justify-center py-32">
+                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-500 border-t-transparent"></div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredAssets.map((asset) => {
                         const Icon = typeIcons[asset.type] || Globe;
-                        const hasProjects = asset.projects && asset.projects.length > 0;
 
                         return (
-                            <Card key={asset.id} className="group card-hover hover:border-primary-200 dark:hover:border-primary-900/50 transition-all flex flex-col h-full">
-                                <div className="p-1 flex-grow">
-                                    <div className="flex items-start justify-between mb-6">
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 truncate tracking-tight">{asset.name}</h3>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-0.5 rounded tracking-widest uppercase">
-                                                    {typeLabels[asset.type] || asset.type?.toUpperCase()}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl group-hover:bg-primary-50 dark:group-hover:bg-primary-900/20 group-hover:text-primary-600 dark:group-hover:text-primary-400 text-gray-400 dark:text-gray-500 transition-colors border border-gray-100 dark:border-gray-700">
+                            <Card
+                                key={asset.id}
+                                className="group cursor-pointer hover:border-primary-500/50 dark:hover:border-primary-500/30 transition-all !p-0 overflow-hidden"
+                                onClick={() => navigate(`/infra/${asset.id}`)}
+                            >
+                                <div className="p-6 space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-primary-50 dark:group-hover:bg-primary-500/10 group-hover:text-primary-600 transition-all shadow-inner">
                                             <Icon size={24} />
                                         </div>
+                                        <StatusBadge status={asset.status} />
                                     </div>
 
-                                    <div className="space-y-3 mb-6">
-                                        {asset.domain_name && (
-                                            <div className="flex items-center justify-between text-xs font-medium">
-                                                <span className="text-gray-500 dark:text-gray-400 uppercase tracking-wide text-[10px] font-bold">Domain</span>
-                                                <span className="text-gray-900 dark:text-white truncate max-w-[150px] font-mono">{asset.domain_name}</span>
-                                            </div>
-                                        )}
-                                        {asset.expire_date && (
-                                            <div className="flex items-center justify-between text-xs font-medium">
-                                                <span className="text-gray-500 dark:text-gray-400 uppercase tracking-wide text-[10px] font-bold">Expires</span>
-                                                <span className="font-mono text-gray-900 dark:text-white">{asset.expire_date}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Linked Projects Section - Relational Enhancement */}
-                                    {hasProjects && (
-                                        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800/50">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                                                    Linked Projects ({asset.projects.length})
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 group-hover:text-primary-600 transition-colors truncate">
+                                            {asset.name}
+                                        </h3>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider flex items-center gap-2">
+                                            {asset.type}
+                                            {asset.server_type && (
+                                                <span className="px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-[10px]">
+                                                    {asset.server_type}
                                                 </span>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {asset.projects.map(project => (
-                                                    <Link
-                                                        key={project.id}
-                                                        to={`/projects/${project.id}`}
-                                                        className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/10 border border-transparent hover:border-primary-100 dark:hover:border-primary-900/30 transition-all group/project"
-                                                    >
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-200 truncate">{project.title}</span>
-                                                                <StatusBadge status={project.status} className="scale-75 origin-left" />
-                                                            </div>
-                                                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-1 rounded-full mt-1.5 overflow-hidden">
-                                                                <div
-                                                                    className="bg-primary-500 h-full rounded-full"
-                                                                    style={{ width: `${project.progress || 0}%` }}
-                                                                ></div>
-                                                            </div>
-                                                        </div>
-                                                        <ArrowRight size={12} className="text-gray-400 group-hover/project:text-primary-500 ml-2 transition-transform group-hover/project:translate-x-0.5" />
-                                                    </Link>
-                                                ))}
+                                            )}
+                                        </p>
+                                    </div>
+
+                                    <div className="pt-4 flex items-center justify-between text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-white/5">
+                                        <span className="text-[10px] uppercase font-bold tracking-widest">
+                                            Click for Details
+                                        </span>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={(e) => handleDelete(e, asset.id)}
+                                                className="p-2 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-900/10 rounded-lg transition-all"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                            <div className="p-2 text-primary-500">
+                                                <ArrowRight size={18} />
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-
-                                <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                                    <StatusBadge status={asset.status} />
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(asset.id);
-                                            }}
-                                            className="p-2 text-gray-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-900/20 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 cursor-pointer flex items-center justify-center"
-                                            title="Delete Asset"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
                                     </div>
                                 </div>
                             </Card>
@@ -212,16 +139,16 @@ const Infra = () => {
             )}
 
             {!loading && filteredAssets.length === 0 && (
-                <div className="text-center py-32 bg-gray-50/50 dark:bg-dark-surface rounded-2xl border border-dashed border-gray-200 dark:border-dark-border">
-                    <Box className="mx-auto text-gray-300 dark:text-gray-600 mb-6" size={64} />
-                    <p className="text-gray-800 dark:text-gray-200 font-medium text-xl mb-2 tracking-tight">No Assets Found</p>
-                    <p className="text-gray-500 dark:text-gray-400 mb-10 text-sm">Try adjusting your filters or add a new asset.</p>
-                    <Link to="/infra/add" className="btn btn-primary px-10 py-4">
-                        <Plus size={20} className="mr-2" />
-                        Add First Asset
+                <div className="text-center py-24 bg-gray-50/50 dark:bg-white/5 rounded-3xl border border-dashed border-gray-200 dark:border-white/10">
+                    <Globe className="mx-auto text-gray-300 dark:text-gray-700 mb-4" size={48} />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">No infrastructure found</h3>
+                    <p className="text-sm text-gray-500 mb-6">Start by adding your first domain or server.</p>
+                    <Link to="/infra/add" className="btn btn-primary">
+                        Add New Asset
                     </Link>
                 </div>
             )}
+
             <FloatingAddButton onClick={() => navigate('/infra/add')} />
         </MainLayout>
     );

@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
 import { Card, SearchInput, FloatingAddButton } from '../components/common';
 import { Eye, Clock, X, Plus } from 'lucide-react';
 import { proposalsAPI } from '../services/api';
+import ProposalModal from '../components/proposals/ProposalModal';
 
 const Proposals = () => {
+    const navigate = useNavigate();
     const [proposals, setProposals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({ title: '', client: '', value: '' });
 
     useEffect(() => {
         fetchProposals();
@@ -27,17 +29,7 @@ const Proposals = () => {
         }
     };
 
-    const handleCreate = async (e) => {
-        e.preventDefault();
-        try {
-            await proposalsAPI.create(formData);
-            setShowModal(false);
-            setFormData({ title: '', client: '', value: '' });
-            fetchProposals();
-        } catch (error) {
-            console.error('Error creating proposal:', error);
-        }
-    };
+
 
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this proposal?')) {
@@ -126,7 +118,11 @@ const Proposals = () => {
                 ) : (
                     <div className="divide-y divide-gray-100 dark:divide-gray-800">
                         {filteredProposals.map((proposal) => (
-                            <div key={proposal.id} className="p-5 lg:p-6 table-row-hover group">
+                            <div
+                                key={proposal.id}
+                                onClick={() => navigate(`/proposals/${proposal.id}`)}
+                                className="p-5 lg:p-6 table-row-hover group cursor-pointer"
+                            >
                                 <div className="flex items-start justify-between mb-3">
                                     <div>
                                         <h3 className="font-semibold text-gray-900 dark:text-white tracking-tight text-[15px]">{proposal.title}</h3>
@@ -140,7 +136,7 @@ const Proposals = () => {
                                             {formatCurrency(proposal.value)}
                                         </span>
                                         <button
-                                            onClick={() => handleDelete(proposal.id)}
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(proposal.id); }}
                                             className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-all duration-200 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"
                                         >
                                             <X size={14} />
@@ -159,18 +155,13 @@ const Proposals = () => {
                                         </span>
                                     </div>
                                     <button
-                                        onClick={() => {
-                                            setFormData({
-                                                id: proposal.id,
-                                                title: proposal.title,
-                                                client: proposal.client,
-                                                value: proposal.value
-                                            });
-                                            setShowModal(true);
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/proposals/${proposal.id}`);
                                         }}
                                         className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
                                     >
-                                        Edit Details
+                                        View Details
                                     </button>
                                 </div>
                             </div>
@@ -187,72 +178,13 @@ const Proposals = () => {
 
             <FloatingAddButton onClick={() => setShowModal(true)} />
 
-            {/* Add Proposal Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-md p-6 relative animate-enter"
-                    >
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">New Proposal</h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-150 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleCreate}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Title *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.title}
-                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        className="input"
-                                        placeholder="Proposal title"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Client</label>
-                                    <input
-                                        type="text"
-                                        value={formData.client}
-                                        onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                                        className="input"
-                                        placeholder="Client name"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Value (₹)</label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 font-medium text-sm">₹</span>
-                                        <input
-                                            type="number"
-                                            value={formData.value}
-                                            onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                                            className="input pl-8"
-                                            placeholder="0"
-                                            min="0"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex gap-3 mt-8">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="flex-1 btn btn-secondary text-sm"
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className="flex-1 btn btn-primary text-sm">
-                                    {formData.id ? 'Update' : 'Create'} Proposal
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </MainLayout>
+            {/* Shared Proposal Modal */}
+            <ProposalModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                onSuccess={fetchProposals}
+            />
+        </MainLayout >
     );
 };
 

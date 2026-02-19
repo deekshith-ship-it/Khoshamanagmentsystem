@@ -96,7 +96,10 @@ async function fetchAPI(endpoint, options = {}) {
 
 // LEADS
 export const leadsAPI = {
-    getAll: () => fetchAPI('/leads'),
+    getAll: (params) => {
+        const query = params ? `?${new URLSearchParams(params)}` : '';
+        return fetchAPI(`/leads${query}`);
+    },
     getById: (id) => fetchAPI(`/leads/${id}`),
     create: (data) => fetchAPI('/leads', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => fetchAPI(`/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -119,6 +122,7 @@ export const leadActivitiesAPI = {
 // PROPOSALS
 export const proposalsAPI = {
     getAll: () => fetchAPI('/proposals'),
+    getById: (id) => fetchAPI(`/proposals/${id}`), // I need to ensure backend supports this. Backend 'proposals.js' probably only has GetAll?
     getByLeadId: (leadId) => fetchAPI(`/leads/${leadId}/proposals`),
     create: (data) => fetchAPI('/proposals', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => fetchAPI(`/proposals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -149,16 +153,27 @@ export const projectsAPI = {
 // TASKS
 export const tasksAPI = {
     getAll: () => fetchAPI('/tasks'),
+    getById: (id) => fetchAPI(`/tasks/${id}`),
     create: (data) => fetchAPI('/tasks', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => fetchAPI(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => fetchAPI(`/tasks/${id}`, { method: 'DELETE' }),
+    // Subtasks
+    addSubtask: (taskId, title) => fetchAPI(`/tasks/${taskId}/subtasks`, { method: 'POST', body: JSON.stringify({ title }) }),
+    updateSubtask: (taskId, subtaskId, isCompleted) => fetchAPI(`/tasks/subtasks/${subtaskId}`, { method: 'PUT', body: JSON.stringify({ is_completed: isCompleted }) }),
+    deleteSubtask: (taskId, subtaskId) => fetchAPI(`/tasks/subtasks/${subtaskId}`, { method: 'DELETE' }),
+    // Comments
+    addComment: (taskId, text, userInitials) => fetchAPI(`/tasks/${taskId}/comments`, { method: 'POST', body: JSON.stringify({ text, user_initials: userInitials }) }),
 };
 
 // INFRA
 export const infraAPI = {
     getAll: () => fetchAPI('/infra'),
+    getById: (id) => fetchAPI(`/infra/${id}`),
     create: (data) => fetchAPI('/infra', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => fetchAPI(`/infra/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => fetchAPI(`/infra/${id}`, { method: 'DELETE' }),
+    linkProject: (infraId, projectId) => fetchAPI(`/infra/${infraId}/projects`, { method: 'POST', body: JSON.stringify({ project_id: projectId }) }),
+    unlinkProject: (infraId, projectId) => fetchAPI(`/infra/${infraId}/projects/${projectId}`, { method: 'DELETE' }),
 };
 
 // LINKS

@@ -7,12 +7,12 @@ const AddTask = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        assignee: 'Nischal',
-        status: 'To Do',
-        priority: 'Medium',
-        date: new Date().toISOString().split('T')[0]
+        text: '',
+        notes: '',
+        dependencies: '',
+        credentials: '',
+        status: 'todo',
+        project_id: null
     });
 
     // Handle background scroll lock
@@ -28,11 +28,7 @@ const AddTask = () => {
         e.preventDefault();
         try {
             setLoading(true);
-            const statusMap = { 'To Do': 'todo', 'In Progress': 'in-progress', 'Completed': 'completed' };
-            await tasksAPI.create({
-                ...formData,
-                status: statusMap[formData.status] || formData.status.toLowerCase()
-            });
+            await tasksAPI.create(formData);
             navigate('/tasks');
         } catch (error) {
             console.error('Error creating task:', error);
@@ -77,40 +73,11 @@ const AddTask = () => {
                                 <input
                                     type="text"
                                     required
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                    value={formData.text}
+                                    onChange={(e) => setFormData({ ...formData, text: e.target.value })}
                                     placeholder="e.g. Weekly Report, Server Maintenance"
                                     className="input"
                                 />
-                            </div>
-
-                            {/* Description */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest ml-1">
-                                    Description (Optional)
-                                </label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="input min-h-[100px] resize-none"
-                                    placeholder="Add more details about this task..."
-                                />
-                            </div>
-
-                            {/* Assigned To */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest ml-1">
-                                    Assigned To
-                                </label>
-                                <select
-                                    value={formData.assignee}
-                                    onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
-                                    className="input appearance-none cursor-pointer"
-                                >
-                                    <option value="Nischal">Nischal</option>
-                                    <option value="Ankith">Ankith</option>
-                                    <option value="Deekshi">Deekshi</option>
-                                </select>
                             </div>
 
                             {/* Status */}
@@ -123,38 +90,48 @@ const AddTask = () => {
                                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                     className="input appearance-none cursor-pointer"
                                 >
-                                    <option value="To Do">To Do</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Completed">Completed</option>
+                                    <option value="todo">To Do</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
                                 </select>
                             </div>
 
-                            {/* Priority */}
+                            {/* Notes */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest ml-1">
-                                    Priority
+                                    Notes
                                 </label>
-                                <select
-                                    value={formData.priority}
-                                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                    className="input appearance-none cursor-pointer"
-                                >
-                                    <option value="Low">Low</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="High">High</option>
-                                </select>
+                                <textarea
+                                    value={formData.notes}
+                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                    className="input min-h-[100px] resize-none"
+                                    placeholder="Add more details about this task..."
+                                />
                             </div>
 
-                            {/* Due Date */}
+                            {/* Dependencies */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest ml-1">
-                                    Due Date
+                                    Dependencies
                                 </label>
-                                <input
-                                    type="date"
-                                    value={formData.date}
-                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                    className="input"
+                                <textarea
+                                    value={formData.dependencies}
+                                    onChange={(e) => setFormData({ ...formData, dependencies: e.target.value })}
+                                    className="input min-h-[60px] resize-none"
+                                    placeholder="e.g. Depends on #123"
+                                />
+                            </div>
+
+                            {/* Credentials */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest ml-1">
+                                    Credentials / Access
+                                </label>
+                                <textarea
+                                    value={formData.credentials}
+                                    onChange={(e) => setFormData({ ...formData, credentials: e.target.value })}
+                                    className="input min-h-[60px] font-mono text-sm resize-none"
+                                    placeholder="Any credentials or access details..."
                                 />
                             </div>
                         </form>

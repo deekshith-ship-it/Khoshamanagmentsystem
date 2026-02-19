@@ -31,11 +31,6 @@ app.use('/api/employees', require('./routes/employees'));
 app.use('/api/agreements', require('./routes/agreements'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/team', require('./routes/team'));
-app.use('/api/upload', require('./routes/upload'));
-
-// Serve uploads
-const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Activity log (standalone)
 app.get('/api/activity', async (req, res) => {

@@ -2,10 +2,26 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../db');
 
-// GET all leads
+// GET all leads with Search
 router.get('/', async (req, res) => {
     try {
-        const result = await db.execute('SELECT * FROM leads ORDER BY created_at DESC');
+        const { q } = req.query;
+        let query = 'SELECT * FROM leads';
+        let args = [];
+
+        if (q) {
+            query += ` WHERE 
+                lower(name) LIKE lower(?) OR 
+                phone LIKE ? OR 
+                lower(email) LIKE lower(?) OR 
+                lower(company) LIKE lower(?)`;
+            const searchTerm = `%${q}%`;
+            args = [searchTerm, searchTerm, searchTerm, searchTerm];
+        }
+
+        query += ' ORDER BY created_at DESC';
+
+        const result = await db.execute({ sql: query, args });
         res.json(result.rows);
     } catch (error) {
         console.error('Error fetching leads:', error);
@@ -33,10 +49,10 @@ router.get('/:id', async (req, res) => {
 // CREATE lead
 router.post('/', async (req, res) => {
     try {
-        const { name, email, phone, role, company, status } = req.body;
+        const { name, email, phone, role, company, status, loss_reason, proposal_id, project_id, source } = req.body;
         const result = await db.execute({
-            sql: 'INSERT INTO leads (name, email, phone, role, company, status, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now")) RETURNING *',
-            args: [name, email, phone, role, company, status || 'new']
+            sql: 'INSERT INTO leads (name, email, phone, role, company, status, loss_reason, proposal_id, project_id, source, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now")) RETURNING *',
+            args: [name, email, phone, role, company, status || 'new', loss_reason, proposal_id, project_id, source]
         });
         res.status(201).json(result.rows[0]);
     } catch (error) {
@@ -48,10 +64,10 @@ router.post('/', async (req, res) => {
 // UPDATE lead
 router.put('/:id', async (req, res) => {
     try {
-        const { name, email, phone, role, company, status } = req.body;
+        const { name, email, phone, role, company, status, loss_reason, proposal_id, project_id, source } = req.body;
         const result = await db.execute({
-            sql: 'UPDATE leads SET name = ?, email = ?, phone = ?, role = ?, company = ?, status = ?, closed_lost_reason = ?, updated_at = datetime("now") WHERE id = ? RETURNING *',
-            args: [name, email, phone, role, company, status, req.body.closed_lost_reason || null, req.params.id]
+            sql: 'UPDATE leads SET name = ?, email = ?, phone = ?, role = ?, company = ?, status = ?, loss_reason = ?, proposal_id = ?, project_id = ?, source = ?, updated_at = datetime("now") WHERE id = ? RETURNING *',
+            args: [name, email, phone, role, company, status, loss_reason, proposal_id, project_id, source, req.params.id]
         });
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Lead not found' });
@@ -136,8 +152,8 @@ router.post('/:leadId/activities', async (req, res) => {
     try {
         const { type, title, description } = req.body;
         const result = await db.execute({
-            sql: 'INSERT INTO lead_activities (lead_id, type, title, description, author, created_at) VALUES (?, ?, ?, ?, ?, datetime("now")) RETURNING *',
-            args: [req.params.leadId, type, title, description, req.body.author || 'System']
+            sql: 'INSERT INTO lead_activities (lead_id, type, title, description, created_at) VALUES (?, ?, ?, ?, datetime("now")) RETURNING *',
+            args: [req.params.leadId, type, title, description]
         });
         res.status(201).json(result.rows[0]);
     } catch (error) {

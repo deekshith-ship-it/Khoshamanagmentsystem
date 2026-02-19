@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
-import { Card, Avatar, StatusBadge, SearchInput, FloatingAddButton } from '../components/common';
-import { ChevronRight, X } from 'lucide-react';
+import { Card, Avatar, SearchInput, FloatingAddButton } from '../components/common';
+import { X, Briefcase, Phone, Calendar, Clock, MoreHorizontal } from 'lucide-react';
 import { leadsAPI } from '../services/api';
+import LeadManagementForm from '../components/leads/LeadManagementForm';
 
-const leadFilters = [
-    { value: 'all', label: 'All' },
-    { value: 'new', label: 'New' },
-    { value: 'qualified', label: 'Qualified' },
-    { value: 'proposal-sent', label: 'Proposal Sent' },
-    { value: 'negotiation', label: 'Negotiation' },
-    { value: 'follow-up', label: 'Follow-up' },
-    { value: 'closed-won', label: 'Closed Won' },
-    { value: 'closed-lost', label: 'Closed Lost' },
+const PIPELINE_STAGES = [
+    { key: 'new', label: 'New', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+    { key: 'qualified', label: 'Qualified', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+    { key: 'proposal_sent', label: 'Proposal Sent', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    { key: 'negotiation', label: 'Negotiation', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+    { key: 'follow_up', label: 'Follow Up', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+    { key: 'closed_won', label: 'Closed Won', color: 'bg-green-50 text-green-700 border-green-200' },
+    { key: 'closed_lost', label: 'Closed Lost', color: 'bg-red-50 text-red-700 border-red-200' }
 ];
 
 const Leads = () => {
@@ -21,21 +21,27 @@ const Leads = () => {
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', phone: '', role: '', company: '', status: 'new', closed_lost_reason: '' });
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(search), 500);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     useEffect(() => {
         fetchLeads();
-    }, []);
+    }, [debouncedSearch]);
 
     const fetchLeads = async () => {
         try {
             setLoading(true);
             setError(null);
-            const data = await leadsAPI.getAll();
-            setLeads(data);
+            // Pass search query if exists
+            const params = debouncedSearch ? { q: debouncedSearch } : {};
+            const data = await leadsAPI.getAll(params);
+            setLeads(data || []);
         } catch (error) {
             console.error('Error fetching leads:', error);
             setError(`Failed to fetch leads: ${error.message}. Please check your connection.`);
@@ -44,12 +50,10 @@ const Leads = () => {
         }
     };
 
-    const handleCreate = async (e) => {
-        e.preventDefault();
+    const handleCreate = async (data) => {
         try {
-            await leadsAPI.create(formData);
+            await leadsAPI.create(data);
             setShowModal(false);
-            setFormData({ name: '', email: '', phone: '', role: '', company: '', status: 'new', closed_lost_reason: '' });
             fetchLeads();
         } catch (error) {
             console.error('Error creating lead:', error);
@@ -57,271 +61,136 @@ const Leads = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this lead?')) {
-            try {
-                await leadsAPI.delete(id);
-                fetchLeads();
-            } catch (error) {
-                console.error('Error deleting lead:', error);
-            }
-        }
+    const getLeadsByStage = (stageKey) => {
+        return leads.filter(lead => lead.status === stageKey);
     };
 
-    const filteredLeads = leads.filter(lead => {
-        const matchesFilter = filter === 'all' || lead.status === filter;
-        const matchesSearch = lead.name?.toLowerCase().includes(search.toLowerCase()) ||
-            lead.company?.toLowerCase().includes(search.toLowerCase());
-        return matchesFilter && matchesSearch;
-    });
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(amount || 0);
+    };
 
     return (
         <MainLayout
-            title="Leads"
+            title="Sales Pipeline"
             headerAction={
                 <div className="flex items-center gap-3">
                     <SearchInput
-                        placeholder="Search leads..."
+                        placeholder="Search name, phone, email..."
                         value={search}
                         onChange={setSearch}
-                        className="w-48"
+                        className="w-64"
                     />
-                    <button
-                        onClick={() => setSearch('')}
-                        className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                        title="Clear Search"
-                    >
-                        <X size={20} />
-                    </button>
+                    {search && (
+                        <button
+                            onClick={() => setSearch('')}
+                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Clear Search"
+                        >
+                            <X size={20} />
+                        </button>
+                    )}
                 </div>
             }
         >
             {error && (
-                <div className="bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 p-4 rounded-xl text-sm mb-6 border border-red-100 dark:border-red-900/20 flex items-center justify-between">
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm mb-6 border border-red-100 flex items-center justify-between">
                     <span>{error}</span>
-                    <button onClick={fetchLeads} className="text-xs font-bold uppercase tracking-wider underline">Retry</button>
+                    <button onClick={fetchLeads} className="font-bold uppercase tracking-wider underline">Retry</button>
                 </div>
             )}
 
-            {/* Filter Pills */}
-            <div className="mb-8 mt-2 overflow-x-auto custom-scrollbar">
-                <nav className="flex items-center gap-2 min-w-max px-1">
-                    {leadFilters.map((tab) => (
-                        <button
-                            key={tab.value}
-                            onClick={() => setFilter(tab.value)}
-                            className={`filter-pill ${filter === tab.value ? 'active' : ''}`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </nav>
-            </div>
+            {/* KANBAN BOARD */}
+            <div className="flex overflow-x-auto gap-4 pb-8 min-h-[calc(100vh-200px)]">
+                {PIPELINE_STAGES.map(stage => {
+                    const stageLeads = getLeadsByStage(stage.key);
+                    const totalValue = stageLeads.reduce((sum, lead) => sum + (lead.value || 0), 0); // Assuming lead has value or linked proposal value
 
-            <Card padding="none" className="overflow-hidden">
-                {loading ? (
-                    <div className="p-12 text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent mx-auto mb-4"></div>
-                        <p className="text-gray-500 dark:text-gray-400">Loading leads...</p>
-                    </div>
-                ) : (
-                    <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {filteredLeads.map((lead) => (
-                            <div
-                                key={lead.id}
-                                onClick={() => navigate(`/leads/${lead.id}`)}
-                                className="flex items-center justify-between p-4 table-row-hover cursor-pointer group"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <Avatar name={lead.name} size="md" />
-                                    <div>
-                                        <p className="font-bold text-gray-900 dark:text-white text-sm">{lead.name}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                            {lead.role} <span className="text-gray-300 dark:text-gray-600">•</span> {lead.company}
-                                        </p>
+                    return (
+                        <div key={stage.key} className="min-w-[320px] w-[320px] flex-shrink-0 flex flex-col">
+                            {/* COLUMN HEADER */}
+                            <div className={`p-3 rounded-t-xl border-b-2 flex justify-between items-center ${stage.color} bg-opacity-50`}>
+                                <div>
+                                    <h3 className="font-bold text-xs uppercase tracking-wider">{stage.label}</h3>
+                                    <p className="text-[10px] opacity-80 mt-0.5">{formatCurrency(totalValue)} • {stageLeads.length} Leads</p>
+                                </div>
+                                <span className="bg-white/50 px-2 py-0.5 rounded-full text-xs font-bold">{stageLeads.length}</span>
+                            </div>
+
+                            {/* COLUMN BODY */}
+                            <div className="bg-gray-50/50 dark:bg-gray-800/20 flex-1 rounded-b-xl p-2 space-y-3 overflow-y-auto">
+                                {loading ? (
+                                    <div className="text-center py-4 text-gray-400 text-xs">Loading...</div>
+                                ) : (
+                                    stageLeads.map(lead => (
+                                        <div
+                                            key={lead.id}
+                                            onClick={() => navigate(`/leads/${lead.id}`)}
+                                            className="bg-white dark:bg-dark-surface p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all cursor-pointer group animate-enter"
+                                        >
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar name={lead.name} size="sm" />
+                                                    <div>
+                                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-1">{lead.name}</h4>
+                                                        <p className="text-xs text-gray-500 line-clamp-1">{lead.company}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2 mb-3">
+                                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                    <Phone size={12} className="text-gray-400" />
+                                                    <span>{lead.phone || 'No Phone'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                    <Briefcase size={12} className="text-gray-400" />
+                                                    <span>{lead.project_id ? 'Linked Project' : 'Potential Project'}</span>
+                                                </div>
+                                                {lead.updated_at && (
+                                                    <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                                                        <Clock size={10} />
+                                                        <span>Updated {new Date(lead.updated_at).toLocaleDateString()}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Footer Actions */}
+                                            <div className="pt-3 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center">
+                                                <span className="text-xs font-bold text-gray-900 dark:text-gray-300">
+                                                    -- {/* Lead Value or Proposal Value could go here */}
+                                                </span>
+                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button className="text-gray-400 hover:text-primary-500"><MoreHorizontal size={16} /></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                                {!loading && stageLeads.length === 0 && (
+                                    <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-50 space-y-2 min-h-[100px]">
+                                        <div className="w-16 h-1 rounded-full bg-gray-200"></div>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <StatusBadge status={lead.status} />
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleDelete(lead.id); }}
-                                        className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-danger-600 dark:hover:text-danger-400 transition-all rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20"
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                    <ChevronRight size={18} className="text-gray-300 dark:text-gray-600 group-hover:text-primary-500 transition-colors" />
-                                </div>
+                                )}
                             </div>
-                        ))}
-
-                        {filteredLeads.length === 0 && !loading && (
-                            <div className="p-12 text-center">
-                                <p className="text-gray-500 dark:text-gray-400">No leads found</p>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </Card>
+                        </div>
+                    );
+                })}
+            </div>
 
             <FloatingAddButton onClick={() => setShowModal(true)} />
 
             {/* Add Lead Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-md p-6 relative animate-enter">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Add New Lead</h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleCreate}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Name *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="input"
-                                        placeholder="Enter name"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Email</label>
-                                    <input
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="input"
-                                        placeholder="Enter email address"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Phone Number</label>
-                                    <input
-                                        type="tel"
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="input"
-                                        placeholder="Enter phone number"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Role</label>
-                                        <input
-                                            type="text"
-                                            value={formData.role}
-                                            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                            className="input"
-                                            placeholder="e.g., CEO"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Company</label>
-                                        <input
-                                            type="text"
-                                            value={formData.company}
-                                            onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                                            className="input"
-                                            placeholder="Company"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Status</label>
-                                    <div className="relative">
-                                        <select
-                                            value={formData.status}
-                                            onChange={(e) => setFormData({ ...formData, status: e.target.value, closed_lost_reason: e.target.value !== 'closed-lost' ? '' : formData.closed_lost_reason })}
-                                            className="input appearance-none cursor-pointer"
-                                        >
-                                            <option value="new">New</option>
-                                            <option value="qualified">Qualified</option>
-                                            <option value="proposal-sent">Proposal Sent</option>
-                                            <option value="negotiation">Negotiation</option>
-                                            <option value="follow-up">Follow-up</option>
-                                            <option value="closed-won">Closed Won</option>
-                                            <option value="closed-lost">Closed Lost</option>
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                                            <ChevronRight size={14} className="rotate-90" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {formData.status === 'closed-lost' && (
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Reason for Loss *</label>
-                                        <div className="relative">
-                                            <select
-                                                value={['Too Expensive', 'Budget Issue', 'Lost to Competitor', 'Not Interested', 'No Response', 'Scope Mismatch'].includes(formData.closed_lost_reason) ? formData.closed_lost_reason : (formData.closed_lost_reason ? 'Other' : '')}
-                                                onChange={(e) => setFormData({ ...formData, closed_lost_reason: e.target.value === 'Other' ? '' : e.target.value })}
-                                                className="input appearance-none cursor-pointer"
-                                                required
-                                            >
-                                                <option value="">Select Reason...</option>
-                                                <option value="Too Expensive">Too Expensive</option>
-                                                <option value="Budget Issue">Budget Issue</option>
-                                                <option value="Lost to Competitor">Lost to Competitor</option>
-                                                <option value="Not Interested">Not Interested</option>
-                                                <option value="No Response">No Response</option>
-                                                <option value="Scope Mismatch">Scope Mismatch</option>
-                                                <option value="Other">Other</option>
-                                            </select>
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                                                <ChevronRight size={14} className="rotate-90" />
-                                            </div>
-                                        </div>
-                                        {(!['Too Expensive', 'Budget Issue', 'Lost to Competitor', 'Not Interested', 'No Response', 'Scope Mismatch'].includes(formData.closed_lost_reason) && (formData.closed_lost_reason || formData.closed_lost_reason === '')) && (
-                                            // Only show text input if user selected 'Other' (which sets reason to '') or if reason is already a custom string
-                                            // Wait, logic above is tricky. Let's simplify.
-                                            // If selects 'Other', value becomes ''.
-                                            // Then we show text input.
-                                            // But if specific value is selected, value is that value.
-                                            // Actually simpler: separate state for 'otherReason' isn't needed if we handle it smartly.
-                                            // But for simplicity in this overwrite, I'll use a condition based on whether the current reason is one of the presets.
-                                            null
-                                        )}
-                                        {/* 
-                                            Simplified approach for overwrite: 
-                                            If user selects Other, we set a flag or just use text input always if they don't pick a preset?
-                                            Let's just replicate the logic from LeadDetails but in a single formData state.
-                                          */}
-                                        {['Too Expensive', 'Budget Issue', 'Lost to Competitor', 'Not Interested', 'No Response', 'Scope Mismatch', ''].indexOf(formData.closed_lost_reason) === -1 || (formData.closed_lost_reason === '' && formData.status === 'closed-lost') ? (
-                                            // This logic is getting complex for a declarative overwrite.
-                                            // I'll stick to a simpler "Reason" dropdown. If they want custom, I'll add "Other" input field logic clearly.
-                                            <input
-                                                type="text"
-                                                className="input mt-2"
-                                                placeholder="Specify reason..."
-                                                value={formData.closed_lost_reason} // This might conflict if we clear it. 
-                                                // Actually, let's just assume standard reasons for Add Lead to keep it simple, or just add the text input if "Other" is picked.
-                                                // I'll leave the text input out for "Add Lead" to avoid complexity, or just make it a text field if needed.
-                                                // User requirement: "Show mandatory popup with dropdown... Other (with text input)" -> This was for LeadDetails "Closed Lost" transition.
-                                                // For "Add Lead", I'll just provide the dropdown.
-                                                readOnly={false}
-                                                onChange={(e) => setFormData({ ...formData, closed_lost_reason: e.target.value })}
-                                            />
-                                        ) : null}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex gap-3 mt-8">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="flex-1 btn btn-secondary text-xs uppercase tracking-wider"
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className="flex-1 btn btn-primary text-xs uppercase tracking-wider">
-                                    Add Lead
-                                </button>
-                            </div>
-                        </form>
+                    <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-enter scrollbar-hide">
+                        <LeadManagementForm
+                            onSubmit={handleCreate}
+                            onCancel={() => setShowModal(false)}
+                        />
                     </div>
                 </div>
             )}

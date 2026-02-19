@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
-import { Card } from '../components/common';
-import { ArrowLeft, Trash2, Edit3, Plus, ChevronDown, X, Link2, Check } from 'lucide-react';
+import { Card, StatusBadge } from '../components/common';
+import { ArrowLeft, Trash2, Edit3, Plus, ChevronDown, X, Link2, Check, Globe, Server, Mail } from 'lucide-react';
 import { projectsAPI, infraAPI } from '../services/api';
 
 const ProjectDetails = () => {
@@ -55,10 +55,14 @@ const ProjectDetails = () => {
 
         try {
             await projectsAPI.createTask(id, {
-                ...newTaskData,
-                project_id: id
+                text: newTaskData.title,
+                status: newTaskData.status || 'todo',
+                project_id: id,
+                notes: newTaskData.notes || '',
+                dependencies: newTaskData.dependencies || '',
+                credentials: newTaskData.credentials || ''
             });
-            setNewTaskData({ title: '', date: '', status: 'todo' });
+            setNewTaskData({ title: '', date: '', status: 'todo', notes: '', dependencies: '', credentials: '' });
             setShowNewTaskModal(false);
             fetchProjectData();
         } catch (error) {
@@ -157,8 +161,8 @@ const ProjectDetails = () => {
 
     // Filter tasks by status
     const todoTasks = tasks.filter(t => t.status === 'todo');
-    const doingTasks = tasks.filter(t => t.status === 'doing' || t.status === 'in-progress');
-    const doneTasks = tasks.filter(t => t.status === 'done' || t.status === 'completed');
+    const doingTasks = tasks.filter(t => t.status === 'in_progress');
+    const doneTasks = tasks.filter(t => t.status === 'completed');
 
     const getFilteredTasks = () => {
         switch (activeTab) {
@@ -172,7 +176,7 @@ const ProjectDetails = () => {
     // Calculate progress
     const calculateProgress = () => {
         const totalTasks = tasks.length;
-        if (totalTasks === 0) return 0;
+        if (totalTasks === 0) return 100;
         return Math.round((doneTasks.length / totalTasks) * 100);
     };
 
@@ -277,8 +281,8 @@ const ProjectDetails = () => {
                 <div className="flex gap-1 mb-6 p-1 bg-gray-100/60 dark:bg-white/[0.04] rounded-xl inline-flex">
                     {[
                         { key: 'todo', label: 'To Do', count: todoTasks.length, color: 'text-gray-600 dark:text-gray-300' },
-                        { key: 'doing', label: 'Doing', count: doingTasks.length, color: 'text-amber-600 dark:text-amber-400' },
-                        { key: 'done', label: 'Done', count: doneTasks.length, color: 'text-emerald-600 dark:text-emerald-400' },
+                        { key: 'doing', label: 'In Progress', count: doingTasks.length, color: 'text-amber-600 dark:text-amber-400' },
+                        { key: 'done', label: 'Completed', count: doneTasks.length, color: 'text-emerald-600 dark:text-emerald-400' },
                     ].map(tab => (
                         <button
                             key={tab.key}
@@ -298,42 +302,45 @@ const ProjectDetails = () => {
                     {getFilteredTasks().length > 0 ? (
                         <div className="divide-y divide-gray-100 dark:divide-gray-800">
                             {getFilteredTasks().map((task) => (
-                                <div key={task.id} className="p-5 flex items-center justify-between table-row-hover group/task">
+                                <div
+                                    key={task.id}
+                                    className="p-5 flex items-center justify-between table-row-hover group/task cursor-pointer"
+                                    onClick={() => navigate(`/tasks/${task.id}`)}
+                                >
                                     <div className="flex items-center gap-4">
                                         <button
-                                            onClick={() => handleUpdateTaskStatus(
-                                                task.id,
-                                                task.status === 'done' || task.status === 'completed' ? 'todo' : 'done'
-                                            )}
-                                            className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${task.status === 'done' || task.status === 'completed'
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleUpdateTaskStatus(
+                                                    task.id,
+                                                    task.status === 'completed' ? 'todo' : 'completed'
+                                                );
+                                            }}
+                                            className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${task.status === 'completed'
                                                 ? 'bg-emerald-500 border-emerald-500 text-white'
                                                 : 'border-gray-200 dark:border-gray-700 hover:border-primary-400 bg-white dark:bg-transparent'
                                                 }`}
                                         >
-                                            {(task.status === 'done' || task.status === 'completed') && <Check size={12} strokeWidth={3} />}
+                                            {task.status === 'completed' && <Check size={12} strokeWidth={3} />}
                                         </button>
                                         <div>
-                                            <h4 className={`font-medium text-sm transition-all duration-200 ${task.status === 'done' || task.status === 'completed'
+                                            <h4 className={`font-medium text-sm transition-all duration-200 ${task.status === 'completed'
                                                 ? 'text-gray-400 dark:text-gray-500 line-through'
                                                 : 'text-gray-900 dark:text-white'
-                                                }`}>{task.title}</h4>
+                                                }`}>{task.text || task.title}</h4>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <span className={`badge text-[10px] ${task.status === 'done' || task.status === 'completed' ? 'badge-completed' :
-                                                    activeTab === 'doing' ? 'badge-in-progress' : 'badge-todo'
-                                                    }`}>
-                                                    {task.status}
-                                                </span>
-                                                <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{task.date ? formatDate(task.date) : 'No Date'}</span>
+                                                <StatusBadge status={task.status} />
+                                                <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{task.created_at ? new Date(task.created_at).toLocaleDateString() : 'No Date'}</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1.5 opacity-0 group-hover/task:opacity-100 transition-opacity duration-200">
+                                    <div className="flex items-center gap-1.5 opacity-0 group-hover/task:opacity-100 transition-opacity duration-200" onClick={e => e.stopPropagation()}>
                                         <TaskStatusDropdown
                                             status={task.status}
                                             onChange={(newStatus) => handleUpdateTaskStatus(task.id, newStatus)}
                                         />
                                         <button
-                                            onClick={() => handleDeleteTask(task.id)}
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
                                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200"
                                         >
                                             <X size={14} />
@@ -409,17 +416,26 @@ const ProjectDetails = () => {
 
                 {/* Right Column: Infrastructure Assets */}
                 <div className="lg:col-span-2">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-5 tracking-tight">Infrastructure Assets</h2>
+                    <div className="flex items-center justify-between mb-5">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Infrastructure Assets</h2>
+                        <button
+                            onClick={() => navigate('/infra/add')}
+                            className="text-xs font-bold text-primary-500 hover:text-primary-600 uppercase tracking-widest flex items-center gap-1"
+                        >
+                            <Plus size={14} />
+                            Create New
+                        </button>
+                    </div>
                     <Card hover={false} className="!p-6">
                         {/* Link Asset Controls */}
                         <div className="flex flex-col sm:flex-row items-center gap-3 mb-6 bg-gray-50/80 dark:bg-white/[0.02] p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                            <div className="relative flex-1 w-full">
+                            <div className="relative flex-1 w-full text-gray-900 dark:text-white">
                                 <select
                                     value={selectedAsset}
                                     onChange={(e) => setSelectedAsset(e.target.value)}
                                     className="input bg-white dark:bg-dark-surface w-full appearance-none cursor-pointer"
                                 >
-                                    <option value="">Link existing asset...</option>
+                                    <option value="">Link existing infrastructure...</option>
                                     {unlinkedAssets.map((asset) => (
                                         <option key={asset.id} value={asset.id}>
                                             {asset.name} ({asset.type})
@@ -428,54 +444,54 @@ const ProjectDetails = () => {
                                 </select>
                                 <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                             </div>
-                            <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                                <button
-                                    onClick={handleLinkAsset}
-                                    disabled={!selectedAsset}
-                                    className="btn btn-secondary flex-1 sm:flex-none text-xs uppercase tracking-wider disabled:opacity-40"
-                                >
-                                    Link
-                                </button>
-                                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700 hidden sm:block"></div>
-                                <button
-                                    onClick={() => navigate('/infra')}
-                                    className="btn btn-primary flex-1 sm:flex-none text-xs uppercase tracking-wider"
-                                >
-                                    <Plus size={14} className="mr-1.5" />
-                                    New Asset
-                                </button>
-                            </div>
+                            <button
+                                onClick={handleLinkAsset}
+                                disabled={!selectedAsset}
+                                className="btn btn-primary w-full sm:w-auto px-8 text-xs uppercase tracking-wider disabled:opacity-40"
+                            >
+                                Link Asset
+                            </button>
                         </div>
 
                         {/* Linked Assets List */}
                         {linkedAssets.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {linkedAssets.map((asset) => (
-                                    <div key={asset.id} className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-dark-surface flex items-center justify-between group/asset hover:border-primary-200 dark:hover:border-primary-500/20 transition-all duration-200"
-                                        style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="icon-circle-primary w-9 h-9">
-                                                <Link2 size={16} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-medium text-sm text-gray-900 dark:text-white">{asset.name}</h4>
-                                                <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{asset.type}</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => handleUnlinkAsset(asset.id)}
-                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200 opacity-0 group-hover/asset:opacity-100"
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {linkedAssets.map((asset) => {
+                                    const Icon = asset.type === 'DOMAIN' ? Globe : (asset.type === 'SERVER' ? Server : (asset.type === 'EMAIL' ? Mail : Link2));
+                                    return (
+                                        <div
+                                            key={asset.id}
+                                            className="p-4 rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-white/5 flex items-center justify-between group/asset hover:border-primary-500/30 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                                            onClick={() => navigate(`/infra/${asset.id}`)}
                                         >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                ))}
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-primary-600 dark:text-primary-400">
+                                                    <Icon size={18} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">{asset.name}</h4>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{asset.type}</span>
+                                                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700"></span>
+                                                        <span className="text-[10px] font-bold text-primary-500 uppercase tracking-widest">Active</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleUnlinkAsset(asset.id); }}
+                                                className="p-2 text-gray-300 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-lg transition-all opacity-0 group-hover/asset:opacity-100"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ) : (
-                            <div className="text-center py-10 text-gray-400 dark:text-gray-500">
-                                <Link2 size={24} className="mx-auto mb-2 opacity-20" />
-                                <p className="text-sm font-medium">No assets linked</p>
+                            <div className="text-center py-16 bg-gray-50/50 dark:bg-white/[0.02] rounded-3xl border border-dashed border-gray-200 dark:border-white/10">
+                                <Globe size={40} className="mx-auto mb-4 text-gray-300 dark:text-gray-700 opacity-50" />
+                                <p className="text-sm font-bold text-gray-500 dark:text-gray-400">No infrastructure linked</p>
+                                <p className="text-xs text-gray-400 mt-1">Connect domains or servers to this project</p>
                             </div>
                         )}
                     </Card>
@@ -524,8 +540,8 @@ const ProjectDetails = () => {
                                             className="input appearance-none cursor-pointer"
                                         >
                                             <option value="todo">To Do</option>
-                                            <option value="doing">Doing</option>
-                                            <option value="done">Done</option>
+                                            <option value="in_progress">In Progress</option>
+                                            <option value="completed">Completed</option>
                                         </select>
                                     </div>
                                 </div>
@@ -592,13 +608,12 @@ const ProjectDetails = () => {
                                     <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
                                     <div className="relative">
                                         <select
-                                            value={editFormData.status || 'in-progress'}
+                                            value={editFormData.status || 'in_progress'}
                                             onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
                                             className="input appearance-none cursor-pointer"
                                         >
-                                            <option value="in-progress">In Progress</option>
-                                            <option value="blocked">Blocked</option>
-                                            <option value="reviewing">Reviewing</option>
+                                            <option value="in_progress">In Progress</option>
+                                            <option value="on_hold">On Hold</option>
                                             <option value="completed">Completed</option>
                                         </select>
                                     </div>
@@ -630,19 +645,15 @@ const TaskStatusDropdown = ({ status, onChange }) => {
 
     const statusLabels = {
         'todo': 'To Do',
-        'doing': 'Doing',
-        'in-progress': 'Doing',
-        'done': 'Done',
-        'completed': 'Done'
+        'in_progress': 'In Progress',
+        'completed': 'Completed'
     };
 
     const getStatusClass = (s) => {
         switch (s) {
-            case 'done':
             case 'completed':
                 return 'text-emerald-600 dark:text-emerald-400';
-            case 'doing':
-            case 'in-progress':
+            case 'in_progress':
                 return 'text-amber-600 dark:text-amber-400';
             default:
                 return 'text-gray-600 dark:text-gray-400';
@@ -651,11 +662,9 @@ const TaskStatusDropdown = ({ status, onChange }) => {
 
     const getStatusBg = (s) => {
         switch (s) {
-            case 'done':
             case 'completed':
                 return 'bg-emerald-50 dark:bg-emerald-500/10';
-            case 'doing':
-            case 'in-progress':
+            case 'in_progress':
                 return 'bg-amber-50 dark:bg-amber-500/10';
             default:
                 return 'bg-gray-100 dark:bg-gray-800';
@@ -677,14 +686,14 @@ const TaskStatusDropdown = ({ status, onChange }) => {
                     <div className="absolute right-0 top-full mt-1.5 bg-white dark:bg-dark-surface border border-gray-200/60 dark:border-dark-border rounded-xl z-20 min-w-[120px] overflow-hidden dropdown-enter"
                         style={{ boxShadow: '0 8px 24px -6px rgba(0,0,0,0.1), 0 4px 8px -4px rgba(0,0,0,0.04)' }}
                     >
-                        {['todo', 'doing', 'done'].map((s) => (
+                        {['todo', 'in_progress', 'completed'].map((s) => (
                             <button
                                 key={s}
                                 onClick={() => {
                                     onChange(s);
                                     setIsOpen(false);
                                 }}
-                                className={`block w-full text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-150 ${getStatusClass(s)} hover:bg-gray-50 dark:hover:bg-white/[0.04] ${(status === s || (s === 'done' && status === 'completed') || (s === 'doing' && status === 'in-progress'))
+                                className={`block w-full text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-150 ${getStatusClass(s)} hover:bg-gray-50 dark:hover:bg-white/[0.04] ${status === s
                                     ? `${getStatusBg(s)} font-bold`
                                     : ''
                                     }`}
