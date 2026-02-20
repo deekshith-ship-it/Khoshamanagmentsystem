@@ -1,16 +1,9 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 /**
- * Global Modal Component
- * 
- * @param {boolean} isOpen - Current visibility state
- * @param {string} title - Modal title (Header)
- * @param {React.ReactNode} children - Modal body content
- * @param {Function} onClose - Function to close the modal
- * @param {string} maxWidth - Optional max-width class (default: max-w-2xl)
- * @param {React.ReactNode} footer - Optional footer content (buttons)
- * @param {boolean} isLoading - Optional loading state for overlay
+ * Global Modal Component - Premium Version
  */
 const Modal = ({ isOpen, title, children, onClose, maxWidth = 'max-w-2xl', footer, isLoading = false }) => {
 
@@ -23,50 +16,60 @@ const Modal = ({ isOpen, title, children, onClose, maxWidth = 'max-w-2xl', foote
         return () => window.removeEventListener('keydown', handleEsc);
     }, [isOpen, onClose]);
 
+    // Prevent body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-                onClick={onClose}
-            ></div>
-
+    return createPortal(
+        <div className="modal-overlay">
             {/* Modal Content */}
-            <div className={`relative w-full ${maxWidth} bg-white dark:bg-card-bg rounded-xl shadow-2xl flex flex-col max-h-[90vh] animate-enter overflow-hidden`}>
+            <div className={`modal-premium ${maxWidth} flex flex-col max-h-[90vh] animate-enter relative`}>
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-card-bg sticky top-0 z-10">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-dark-surface/50 backdrop-blur-md sticky top-0 z-20">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{title}</h2>
                     <button
                         onClick={onClose}
-                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
                     >
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-transparent">
                     {children}
                 </div>
 
                 {/* Footer */}
                 {footer && (
-                    <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/20 flex items-center justify-end gap-3 sticky bottom-0 z-10">
+                    <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-900/10 backdrop-blur-md flex items-center justify-end gap-3 sticky bottom-0 z-20">
                         {footer}
                     </div>
                 )}
 
                 {/* Loading Overlay */}
                 {isLoading && (
-                    <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-[1px] flex items-center justify-center z-20">
-                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent"></div>
+                    <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-[100] transition-all duration-300">
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="w-10 h-10 rounded-full border-2 border-primary-500 border-t-transparent animate-spin"></div>
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Processing</span>
+                        </div>
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

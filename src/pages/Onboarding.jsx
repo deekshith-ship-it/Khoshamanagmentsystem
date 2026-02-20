@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../components/layout';
-import { Card, StatusBadge, FloatingAddButton } from '../components/common';
+import { Card, StatusBadge, FloatingAddButton, Modal } from '../components/common';
 import {
     X, Search, Trash2, Edit, UserPlus, Phone, Mail,
     Building2, Briefcase, Loader2, MapPin, Calendar, CreditCard,
@@ -234,227 +234,212 @@ const Onboarding = () => {
             <FloatingAddButton onClick={openAddModal} />
 
             {/* ========== ADD / EDIT EMPLOYEE MODAL ========== */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-enter relative">
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title={editingEmployee ? 'Edit Employee' : 'Add New Employee'}
+                maxWidth="max-w-3xl"
+                footer={
+                    <div className="flex gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={() => setShowModal(false)}
+                            className="flex-1 btn btn-secondary text-xs uppercase tracking-wider"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" form="employee-form" disabled={isSubmitting} className="flex-1 btn btn-primary text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+                            {editingEmployee ? 'Update Employee' : 'Add Employee'}
+                        </button>
+                    </div>
+                }
+            >
+                <form id="employee-form" onSubmit={handleSubmit} className="space-y-8">
 
-                        {/* Modal Header */}
-                        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-gray-100 dark:border-dark-border">
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                                {editingEmployee ? 'Edit Employee' : 'Add New Employee'}
-                            </h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <X size={20} />
-                            </button>
+                    {/* ── Section 1: Personal Details ── */}
+                    <section className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-dark-border">
+                            <UserPlus size={16} className="text-primary-500" />
+                            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Personal Details</h3>
                         </div>
-
-                        {/* Modal Body — Scrollable */}
-                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                            <form id="employee-form" onSubmit={handleSubmit} className="space-y-8">
-
-                                {/* ── Section 1: Personal Details ── */}
-                                <section className="space-y-4">
-                                    <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-dark-border">
-                                        <UserPlus size={16} className="text-primary-500" />
-                                        <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Personal Details</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="md:col-span-2">
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><UserPlus size={12} /> Full Name *</span>
-                                            </label>
-                                            <input type="text" required value={formData.employeeName} onChange={(e) => updateField('employeeName', e.target.value)} className="input" placeholder="Enter full name" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><UserPlus size={12} /> Full Name *</span>
+                                </label>
+                                <input type="text" required value={formData.employeeName} onChange={(e) => updateField('employeeName', e.target.value)} className="input" placeholder="Enter full name" />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><MapPin size={12} /> Address *</span>
+                                </label>
+                                <input type="text" required value={formData.employeeAddress} onChange={(e) => updateField('employeeAddress', e.target.value)} className="input" placeholder="Full address" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Phone size={12} /> Phone Number *</span>
+                                </label>
+                                <input type="tel" required value={formData.employeeNumber} onChange={(e) => updateField('employeeNumber', e.target.value)} className="input" placeholder="10-digit number" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Mail size={12} /> Email</span>
+                                </label>
+                                <input type="email" value={formData.employeeEmail} onChange={(e) => updateField('employeeEmail', e.target.value)} className="input" placeholder="Email address" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Calendar size={12} /> Date of Birth</span>
+                                </label>
+                                <input type="date" value={formData.employeeDOB} onChange={(e) => updateField('employeeDOB', e.target.value)} className="input" />
+                            </div>
+                            <div className="md:col-span-2 mt-2">
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Photo or ID Document</label>
+                                <div className="relative group/file">
+                                    <input
+                                        type="file"
+                                        id="emp-document"
+                                        className="hidden"
+                                        onChange={(e) => updateField('document', e.target.files[0])}
+                                    />
+                                    <label
+                                        htmlFor="emp-document"
+                                        className="flex items-center gap-4 p-4 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/30 dark:hover:bg-primary-900/10 cursor-pointer transition-all"
+                                    >
+                                        <div className="icon-circle-primary w-10 h-10 shrink-0 group-hover/file:scale-110 transition-transform">
+                                            <Upload size={18} />
                                         </div>
-                                        <div className="md:col-span-2">
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><MapPin size={12} /> Address *</span>
-                                            </label>
-                                            <input type="text" required value={formData.employeeAddress} onChange={(e) => updateField('employeeAddress', e.target.value)} className="input" placeholder="Full address" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                                                {formData.document ? formData.document.name : 'Pick a file from local folder'}
+                                            </p>
+                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-medium">
+                                                {formData.document ? `${(formData.document.size / 1024).toFixed(1)} KB` : 'Image or PDF (Max 5MB)'}
+                                            </p>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Phone size={12} /> Phone Number *</span>
-                                            </label>
-                                            <input type="tel" required value={formData.employeeNumber} onChange={(e) => updateField('employeeNumber', e.target.value)} className="input" placeholder="10-digit number" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Mail size={12} /> Email</span>
-                                            </label>
-                                            <input type="email" value={formData.employeeEmail} onChange={(e) => updateField('employeeEmail', e.target.value)} className="input" placeholder="Email address" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Calendar size={12} /> Date of Birth</span>
-                                            </label>
-                                            <input type="date" value={formData.employeeDOB} onChange={(e) => updateField('employeeDOB', e.target.value)} className="input" />
-                                        </div>
-                                        <div className="md:col-span-2 mt-2">
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Photo or ID Document</label>
-                                            <div className="relative group/file">
-                                                <input
-                                                    type="file"
-                                                    id="emp-document"
-                                                    className="hidden"
-                                                    onChange={(e) => updateField('document', e.target.files[0])}
-                                                />
-                                                <label
-                                                    htmlFor="emp-document"
-                                                    className="flex items-center gap-4 p-4 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/30 dark:hover:bg-primary-900/10 cursor-pointer transition-all"
-                                                >
-                                                    <div className="icon-circle-primary w-10 h-10 shrink-0 group-hover/file:scale-110 transition-transform">
-                                                        <Upload size={18} />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                                                            {formData.document ? formData.document.name : 'Pick a file from local folder'}
-                                                        </p>
-                                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-medium">
-                                                            {formData.document ? `${(formData.document.size / 1024).toFixed(1)} KB` : 'Image or PDF (Max 5MB)'}
-                                                        </p>
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                {/* ── Section 2: Job Details ── */}
-                                <section className="space-y-4">
-                                    <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-dark-border">
-                                        <Briefcase size={16} className="text-primary-500" />
-                                        <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Job Details</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Briefcase size={12} /> Designation *</span>
-                                            </label>
-                                            <input type="text" required value={formData.employeeDesignation} onChange={(e) => updateField('employeeDesignation', e.target.value)} className="input" placeholder="e.g., Software Developer" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Building2 size={12} /> Department *</span>
-                                            </label>
-                                            <input type="text" required value={formData.employeeDepartment} onChange={(e) => updateField('employeeDepartment', e.target.value)} className="input" placeholder="e.g., Engineering" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Calendar size={12} /> Joining Date</span>
-                                            </label>
-                                            <input type="date" value={formData.employeeJoinDate} onChange={(e) => updateField('employeeJoinDate', e.target.value)} className="input" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Status</label>
-                                            <select value={formData.status} onChange={(e) => updateField('status', e.target.value)} className="input appearance-none cursor-pointer">
-                                                <option value="active">Active</option>
-                                                <option value="inactive">Inactive</option>
-                                                <option value="on-hold">On Hold</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                {/* ── Section 3: Bank Details ── */}
-                                <section className="space-y-4">
-                                    <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-dark-border">
-                                        <CreditCard size={16} className="text-primary-500" />
-                                        <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Bank Details</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Building2 size={12} /> Bank Name</span>
-                                            </label>
-                                            <input type="text" value={formData.bankName} onChange={(e) => updateField('bankName', e.target.value)} className="input" placeholder="e.g., HDFC Bank" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Hash size={12} /> Account Number *</span>
-                                            </label>
-                                            <input type="text" required value={formData.bankAccountNumber} onChange={(e) => updateField('bankAccountNumber', e.target.value)} className="input" placeholder="Bank account number" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Hash size={12} /> IFSC Code *</span>
-                                            </label>
-                                            <input type="text" required value={formData.ifscCode} onChange={(e) => updateField('ifscCode', e.target.value)} className="input" placeholder="e.g., HDFC0001234" />
-                                        </div>
-                                    </div>
-                                </section>
-
-                                {/* ── Section 4: Identity Documents ── */}
-                                <section className="space-y-4">
-                                    <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-dark-border">
-                                        <Shield size={16} className="text-primary-500" />
-                                        <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Identity Documents</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Shield size={12} /> PAN Number *</span>
-                                            </label>
-                                            <input type="text" required value={formData.panNumber} onChange={(e) => updateField('panNumber', e.target.value.toUpperCase())} className="input" placeholder="e.g., ABCDE1234F" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Shield size={12} /> Aadhar Number *</span>
-                                            </label>
-                                            <input type="text" required value={formData.aadharNumber} onChange={(e) => updateField('aadharNumber', e.target.value)} className="input" placeholder="12-digit Aadhar number" />
-                                        </div>
-                                    </div>
-                                </section>
-
-                                {/* ── Section 5: Emergency Contact ── */}
-                                <section className="space-y-4">
-                                    <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-dark-border">
-                                        <Heart size={16} className="text-danger-500" />
-                                        <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Emergency Contact</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><UserPlus size={12} /> Contact Name *</span>
-                                            </label>
-                                            <input type="text" required value={formData.emergencyContactName} onChange={(e) => updateField('emergencyContactName', e.target.value)} className="input" placeholder="Emergency contact name" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Heart size={12} /> Relationship</span>
-                                            </label>
-                                            <input type="text" value={formData.emergencyContactRelationship} onChange={(e) => updateField('emergencyContactRelationship', e.target.value)} className="input" placeholder="e.g., Father, Spouse" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                                <span className="flex items-center gap-1.5"><Phone size={12} /> Contact Phone *</span>
-                                            </label>
-                                            <input type="tel" required value={formData.emergencyPhone} onChange={(e) => updateField('emergencyPhone', e.target.value)} className="input" placeholder="Emergency phone number" />
-                                        </div>
-                                    </div>
-                                </section>
-
-                            </form>
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div className="flex-shrink-0 p-6 border-t border-gray-100 dark:border-dark-border bg-gray-50/50 dark:bg-dark-surface">
-                            <div className="flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="flex-1 btn btn-secondary text-xs uppercase tracking-wider"
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" form="employee-form" disabled={isSubmitting} className="flex-1 btn btn-primary text-xs uppercase tracking-wider flex items-center justify-center gap-2">
-                                    {isSubmitting && <Loader2 size={16} className="animate-spin" />}
-                                    {editingEmployee ? 'Update Employee' : 'Add Employee'}
-                                </button>
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            )}
+                    </section>
+
+                    {/* ── Section 2: Job Details ── */}
+                    <section className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-dark-border">
+                            <Briefcase size={16} className="text-primary-500" />
+                            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Job Details</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Briefcase size={12} /> Designation *</span>
+                                </label>
+                                <input type="text" required value={formData.employeeDesignation} onChange={(e) => updateField('employeeDesignation', e.target.value)} className="input" placeholder="e.g., Software Developer" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Building2 size={12} /> Department *</span>
+                                </label>
+                                <input type="text" required value={formData.employeeDepartment} onChange={(e) => updateField('employeeDepartment', e.target.value)} className="input" placeholder="e.g., Engineering" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Calendar size={12} /> Joining Date</span>
+                                </label>
+                                <input type="date" value={formData.employeeJoinDate} onChange={(e) => updateField('employeeJoinDate', e.target.value)} className="input" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Status</label>
+                                <select value={formData.status} onChange={(e) => updateField('status', e.target.value)} className="input appearance-none cursor-pointer">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="on-hold">On Hold</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ── Section 3: Bank Details ── */}
+                    <section className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-dark-border">
+                            <CreditCard size={16} className="text-primary-500" />
+                            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Bank Details</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Building2 size={12} /> Bank Name</span>
+                                </label>
+                                <input type="text" value={formData.bankName} onChange={(e) => updateField('bankName', e.target.value)} className="input" placeholder="e.g., HDFC Bank" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Hash size={12} /> Account Number *</span>
+                                </label>
+                                <input type="text" required value={formData.bankAccountNumber} onChange={(e) => updateField('bankAccountNumber', e.target.value)} className="input" placeholder="Bank account number" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Hash size={12} /> IFSC Code *</span>
+                                </label>
+                                <input type="text" required value={formData.ifscCode} onChange={(e) => updateField('ifscCode', e.target.value)} className="input" placeholder="e.g., HDFC0001234" />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ── Section 4: Identity Documents ── */}
+                    <section className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-dark-border">
+                            <Shield size={16} className="text-primary-500" />
+                            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Identity Documents</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Shield size={12} /> PAN Number *</span>
+                                </label>
+                                <input type="text" required value={formData.panNumber} onChange={(e) => updateField('panNumber', e.target.value.toUpperCase())} className="input" placeholder="e.g., ABCDE1234F" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Shield size={12} /> Aadhar Number *</span>
+                                </label>
+                                <input type="text" required value={formData.aadharNumber} onChange={(e) => updateField('aadharNumber', e.target.value)} className="input" placeholder="12-digit Aadhar number" />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ── Section 5: Emergency Contact ── */}
+                    <section className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-dark-border">
+                            <Heart size={16} className="text-danger-500" />
+                            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Emergency Contact</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><UserPlus size={12} /> Contact Name *</span>
+                                </label>
+                                <input type="text" required value={formData.emergencyContactName} onChange={(e) => updateField('emergencyContactName', e.target.value)} className="input" placeholder="Emergency contact name" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Heart size={12} /> Relationship</span>
+                                </label>
+                                <input type="text" value={formData.emergencyContactRelationship} onChange={(e) => updateField('emergencyContactRelationship', e.target.value)} className="input" placeholder="e.g., Father, Spouse" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                    <span className="flex items-center gap-1.5"><Phone size={12} /> Contact Phone *</span>
+                                </label>
+                                <input type="tel" required value={formData.emergencyPhone} onChange={(e) => updateField('emergencyPhone', e.target.value)} className="input" placeholder="Emergency phone number" />
+                            </div>
+                        </div>
+                    </section>
+
+                </form>
+            </Modal>
         </MainLayout>
     );
 };

@@ -114,251 +114,232 @@ const LeadManagementForm = ({ initialData, onSubmit, onCancel }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto p-1 animate-enter">
-            <Card className="shadow-sm border-gray-100 dark:border-dark-border">
-                <div className="p-6 md:p-8">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-50 dark:border-dark-border/50">
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Lead Details</h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage lead profile and conversion status</p>
-                        </div>
-                        <div className="hidden sm:block">
-                            {formData.status && (
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${STATUS_OPTIONS.find(s => s.value === formData.status)?.color || ''}`}>
-                                    {STATUS_OPTIONS.find(s => s.value === formData.status)?.label}
-                                </span>
-                            )}
-                        </div>
-                    </div>
+        <form onSubmit={handleSubmit} className="w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                {/* Basic Info Section */}
+                <div className="space-y-6">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <User size={14} /> Contact Information
+                    </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                        {/* Basic Info Section */}
-                        <div className="space-y-6">
-                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                <User size={14} /> Contact Information
-                            </h3>
-
-                            {/* Name info */}
-                            <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Full Name *</label>
-                                <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
-                                        <User size={18} />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        placeholder="e.g. John Doe"
-                                        className={`input pl-10 ${errors.name ? 'border-red-300 focus:ring-red-100' : ''}`}
-                                    />
-                                </div>
-                                {errors.name && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.name}</p>}
+                    {/* Name info */}
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Full Name *</label>
+                        <div className="relative group">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
+                                <User size={18} />
                             </div>
-
-                            {/* Job Title */}
-                            <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Job Title</label>
-                                <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
-                                        <Briefcase size={18} />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="role"
-                                        value={formData.role}
-                                        onChange={handleChange}
-                                        placeholder="e.g. CEO"
-                                        className="input pl-10"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Email */}
-                            <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Email Address</label>
-                                <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
-                                        <Mail size={18} />
-                                    </div>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        placeholder="john@example.com"
-                                        className={`input pl-10 ${errors.email ? 'border-red-300 focus:ring-red-100' : ''}`}
-                                    />
-                                </div>
-                                {errors.email && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.email}</p>}
-                            </div>
-
-                            {/* Phone */}
-                            <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Phone Number</label>
-                                <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
-                                        <Phone size={18} />
-                                    </div>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        placeholder="+1 (555) 000-0000"
-                                        className="input pl-10"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Professional Info Section */}
-                        <div className="space-y-6">
-                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                <Building2 size={14} /> Professional Details
-                            </h3>
-
-                            {/* Source */}
-                            <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Lead Source</label>
-                                <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
-                                        <AlertCircle size={18} />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="source"
-                                        value={formData.source || ''}
-                                        onChange={handleChange}
-                                        placeholder="e.g. Website, Referral"
-                                        className="input pl-10"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Company */}
-                            <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Company Name</label>
-                                <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
-                                        <Building2 size={18} />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="company"
-                                        value={formData.company}
-                                        onChange={handleChange}
-                                        placeholder="Acme Corp"
-                                        className="input pl-10"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Status Selection */}
-                            <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Lead Status *</label>
-                                <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors z-10 pointer-events-none">
-                                        <CheckCircle2 size={18} />
-                                    </div>
-                                    <select
-                                        name="status"
-                                        value={formData.status}
-                                        onChange={handleChange}
-                                        className={`input pl-10 appearance-none cursor-pointer ${errors.status ? 'border-red-300 focus:ring-red-100' : ''}`}
-                                    >
-                                        <option value="" disabled>Select Status</option>
-                                        {STATUS_OPTIONS.map(opt => (
-                                            <option
-                                                key={opt.value}
-                                                value={opt.value}
-                                                disabled={isTransitionDisabled(opt.value)}
-                                            >
-                                                {opt.label} {isTransitionDisabled(opt.value) ? '(Requires Qualification)' : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                                        <ChevronDown size={16} />
-                                    </div>
-                                </div>
-                                {errors.status && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.status}</p>}
-                            </div>
-
-                            {/* Conditional Rendering: Reason for Loss */}
-                            {formData.status === 'closed_lost' && (
-                                <div className="space-y-1.5 animate-slide-up">
-                                    <label className="block text-xs font-bold text-rose-600 dark:text-rose-400 ml-1 inline-flex items-center gap-1">
-                                        <XCircle size={10} /> Reason for Loss *
-                                    </label>
-                                    <div className="relative group">
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-rose-400 group-focus-within:text-rose-500 transition-colors z-10 pointer-events-none">
-                                            <AlertCircle size={18} />
-                                        </div>
-                                        <select
-                                            name="loss_reason"
-                                            value={formData.loss_reason}
-                                            onChange={handleChange}
-                                            required
-                                            className={`input pl-10 border-rose-200 bg-rose-50/30 focus:ring-rose-100 appearance-none cursor-pointer ${errors.loss_reason ? 'border-red-400' : ''}`}
-                                        >
-                                            <option value="" disabled>Select Reason</option>
-                                            {LOSS_REASONS.map(reason => (
-                                                <option key={reason} value={reason}>{reason}</option>
-                                            ))}
-                                        </select>
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-400 pointer-events-none">
-                                            <ChevronDown size={16} />
-                                        </div>
-                                    </div>
-                                    {errors.loss_reason && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.loss_reason}</p>}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Full Width Footer Area */}
-                    <div className="mt-8 space-y-6 pt-6 border-t border-gray-50 dark:border-dark-border/50">
-                        <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Internal Notes</label>
-                            <textarea
-                                name="notes"
-                                value={formData.notes}
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
                                 onChange={handleChange}
-                                rows="3"
-                                placeholder="Add any specific context about this lead..."
-                                className="input resize-none"
-                            ></textarea>
+                                placeholder="e.g. John Doe"
+                                className={`input pl-10 ${errors.name ? 'border-red-300 focus:ring-red-100' : ''}`}
+                            />
                         </div>
+                        {errors.name && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.name}</p>}
+                    </div>
 
-                        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4">
-                            <button
-                                type="button"
-                                onClick={onCancel}
-                                className="w-full sm:w-auto px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <X size={16} /> Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="w-full sm:w-auto btn btn-primary flex items-center justify-center gap-2 py-2.5 px-8 shadow-md hover:shadow-lg disabled:opacity-70"
-                            >
-                                {isSubmitting ? (
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div>
-                                ) : (
-                                    <>
-                                        <Save size={16} />
-                                        <span>Save Lead Module</span>
-                                    </>
-                                )}
-                            </button>
+                    {/* Job Title */}
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Job Title</label>
+                        <div className="relative group">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
+                                <Briefcase size={18} />
+                            </div>
+                            <input
+                                type="text"
+                                name="role"
+                                value={formData.role}
+                                onChange={handleChange}
+                                placeholder="e.g. CEO"
+                                className="input pl-10"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Email */}
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Email Address</label>
+                        <div className="relative group">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
+                                <Mail size={18} />
+                            </div>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="john@example.com"
+                                className={`input pl-10 ${errors.email ? 'border-red-300 focus:ring-red-100' : ''}`}
+                            />
+                        </div>
+                        {errors.email && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.email}</p>}
+                    </div>
+
+                    {/* Phone */}
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Phone Number</label>
+                        <div className="relative group">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
+                                <Phone size={18} />
+                            </div>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                placeholder="+1 (555) 000-0000"
+                                className="input pl-10"
+                            />
                         </div>
                     </div>
                 </div>
-            </Card>
+
+                {/* Professional Info Section */}
+                <div className="space-y-6">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <Building2 size={14} /> Professional Details
+                    </h3>
+
+                    {/* Source */}
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Lead Source</label>
+                        <div className="relative group">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
+                                <AlertCircle size={18} />
+                            </div>
+                            <input
+                                type="text"
+                                name="source"
+                                value={formData.source || ''}
+                                onChange={handleChange}
+                                placeholder="e.g. Website, Referral"
+                                className="input pl-10"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Company */}
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Company Name</label>
+                        <div className="relative group">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors">
+                                <Building2 size={18} />
+                            </div>
+                            <input
+                                type="text"
+                                name="company"
+                                value={formData.company}
+                                onChange={handleChange}
+                                placeholder="Acme Corp"
+                                className="input pl-10"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Status Selection */}
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Lead Status *</label>
+                        <div className="relative group">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors z-10 pointer-events-none">
+                                <CheckCircle2 size={18} />
+                            </div>
+                            <select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                className={`input pl-10 appearance-none cursor-pointer ${errors.status ? 'border-red-300 focus:ring-red-100' : ''}`}
+                            >
+                                <option value="" disabled>Select Status</option>
+                                {STATUS_OPTIONS.map(opt => (
+                                    <option
+                                        key={opt.value}
+                                        value={opt.value}
+                                        disabled={isTransitionDisabled(opt.value)}
+                                    >
+                                        {opt.label} {isTransitionDisabled(opt.value) ? '(Requires Qualification)' : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                <ChevronDown size={16} />
+                            </div>
+                        </div>
+                        {errors.status && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.status}</p>}
+                    </div>
+
+                    {/* Conditional Rendering: Reason for Loss */}
+                    {formData.status === 'closed_lost' && (
+                        <div className="space-y-1.5 animate-slide-up">
+                            <label className="block text-xs font-bold text-rose-600 dark:text-rose-400 ml-1 inline-flex items-center gap-1">
+                                <XCircle size={10} /> Reason for Loss *
+                            </label>
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-rose-400 group-focus-within:text-rose-500 transition-colors z-10 pointer-events-none">
+                                    <AlertCircle size={18} />
+                                </div>
+                                <select
+                                    name="loss_reason"
+                                    value={formData.loss_reason}
+                                    onChange={handleChange}
+                                    required
+                                    className={`input pl-10 border-rose-200 bg-rose-50/30 focus:ring-rose-100 appearance-none cursor-pointer ${errors.loss_reason ? 'border-red-400' : ''}`}
+                                >
+                                    <option value="" disabled>Select Reason</option>
+                                    {LOSS_REASONS.map(reason => (
+                                        <option key={reason} value={reason}>{reason}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-400 pointer-events-none">
+                                    <ChevronDown size={16} />
+                                </div>
+                            </div>
+                            {errors.loss_reason && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.loss_reason}</p>}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Full Width Footer Area */}
+            <div className="mt-8 space-y-6 pt-6 border-t border-gray-50 dark:border-dark-border/50">
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 ml-1">Internal Notes</label>
+                    <textarea
+                        name="notes"
+                        value={formData.notes}
+                        onChange={handleChange}
+                        rows="3"
+                        placeholder="Add any specific context about this lead..."
+                        className="input resize-none"
+                    ></textarea>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="w-full sm:w-auto px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors flex items-center justify-center gap-2"
+                    >
+                        <X size={16} /> Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full sm:w-auto btn btn-primary flex items-center justify-center gap-2 py-2.5 px-8 shadow-md hover:shadow-lg disabled:opacity-70"
+                    >
+                        {isSubmitting ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div>
+                        ) : (
+                            <>
+                                <Save size={16} />
+                                <span>Save Lead Module</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
         </form>
     );
 };

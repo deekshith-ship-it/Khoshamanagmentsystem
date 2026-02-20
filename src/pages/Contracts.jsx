@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MainLayout } from '../components/layout';
-import { Card } from '../components/common';
+import { Card, Modal, FloatingAddButton } from '../components/common';
 import {
     FileSignature,
     FileText,
@@ -269,155 +269,150 @@ const Contracts = () => {
                 </div>
             )}
 
-            {/* Add/Edit Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto animate-enter relative">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                                {editingAgreement ? 'Edit Agreement' : 'New Agreement'}
-                            </h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <X size={20} />
-                            </button>
+            {/* Add/Edit Agreement Modal */}
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title={editingAgreement ? 'Edit Agreement' : 'New Agreement'}
+                maxWidth="max-w-xl"
+                footer={
+                    <div className="flex gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={() => setShowModal(false)}
+                            className="flex-1 btn btn-secondary text-xs uppercase tracking-wider font-bold"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" form="agreement-form" disabled={isSubmitting} className="flex-1 btn btn-primary text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2">
+                            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+                            {editingAgreement ? 'Update Agreement' : 'Create Agreement'}
+                        </button>
+                    </div>
+                }
+            >
+                <form id="agreement-form" onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Title *</label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                className="input"
+                                placeholder="Agreement title"
+                            />
                         </div>
-
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Title *</label>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Client Name</label>
                                 <input
                                     type="text"
-                                    required
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                    value={formData.client_name}
+                                    onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
                                     className="input"
-                                    placeholder="Agreement title"
+                                    placeholder="Client"
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Client Name</label>
-                                    <input
-                                        type="text"
-                                        value={formData.client_name}
-                                        onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-                                        className="input"
-                                        placeholder="Client"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Type</label>
-                                    <select
-                                        value={formData.type}
-                                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                        className="input appearance-none cursor-pointer"
-                                    >
-                                        <option value="service">Service Agreement</option>
-                                        <option value="nda">NDA</option>
-                                        <option value="employment">Employment</option>
-                                        <option value="partnership">Partnership</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Start Date</label>
-                                    <input
-                                        type="date"
-                                        value={formData.start_date}
-                                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                                        className="input"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">End Date</label>
-                                    <input
-                                        type="date"
-                                        value={formData.end_date}
-                                        onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                        className="input"
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Value (₹)</label>
-                                    <input
-                                        type="number"
-                                        value={formData.value}
-                                        onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                                        className="input"
-                                        placeholder="0"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Status</label>
-                                    <select
-                                        value={formData.status}
-                                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        className="input appearance-none cursor-pointer"
-                                    >
-                                        <option value="draft">Draft</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="active">Active</option>
-                                        <option value="expired">Expired</option>
-                                    </select>
-                                </div>
-                            </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Description</label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="input min-h-[100px] resize-none"
-                                    placeholder="Brief description..."
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Contract Document</label>
-                                <div className="relative group/file">
-                                    <input
-                                        type="file"
-                                        id="contract-file"
-                                        className="hidden"
-                                        onChange={(e) => setFormData({ ...formData, document: e.target.files[0] })}
-                                    />
-                                    <label
-                                        htmlFor="contract-file"
-                                        className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/30 dark:hover:bg-primary-900/10 cursor-pointer transition-all"
-                                    >
-                                        <div className="icon-circle-primary w-10 h-10 mb-3 group-hover/file:scale-110 transition-transform">
-                                            <Upload size={18} />
-                                        </div>
-                                        <p className="text-xs font-bold text-gray-900 dark:text-white mb-1">
-                                            {formData.document ? formData.document.name : 'Pick a file from local folder'}
-                                        </p>
-                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-medium">
-                                            {formData.document ? `${(formData.document.size / 1024).toFixed(1)} KB` : 'PDF, DOCX, or Images up to 10MB'}
-                                        </p>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 mt-8">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="flex-1 btn btn-secondary text-xs uppercase tracking-wider"
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Type</label>
+                                <select
+                                    value={formData.type}
+                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                    className="input appearance-none cursor-pointer"
                                 >
-                                    Cancel
-                                </button>
-                                <button type="submit" disabled={isSubmitting} className="flex-1 btn btn-primary text-xs uppercase tracking-wider flex items-center justify-center gap-2">
-                                    {isSubmitting && <Loader2 size={16} className="animate-spin" />}
-                                    {editingAgreement ? 'Update' : 'Create'}
-                                </button>
+                                    <option value="service">Service Agreement</option>
+                                    <option value="nda">NDA</option>
+                                    <option value="employment">Employment</option>
+                                    <option value="partnership">Partnership</option>
+                                    <option value="other">Other</option>
+                                </select>
                             </div>
-                        </form>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Start Date</label>
+                                <input
+                                    type="date"
+                                    value={formData.start_date}
+                                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                                    className="input"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">End Date</label>
+                                <input
+                                    type="date"
+                                    value={formData.end_date}
+                                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                                    className="input"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Value (₹)</label>
+                                <input
+                                    type="number"
+                                    value={formData.value}
+                                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                                    className="input"
+                                    placeholder="0"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Status</label>
+                                <select
+                                    value={formData.status}
+                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                    className="input appearance-none cursor-pointer"
+                                >
+                                    <option value="draft">Draft</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="active">Active</option>
+                                    <option value="expired">Expired</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Description</label>
+                            <textarea
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                className="input min-h-[100px] resize-none"
+                                placeholder="Brief description..."
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Contract Document</label>
+                            <div className="relative group/file">
+                                <input
+                                    type="file"
+                                    id="contract-file"
+                                    className="hidden"
+                                    onChange={(e) => setFormData({ ...formData, document: e.target.files[0] })}
+                                />
+                                <label
+                                    htmlFor="contract-file"
+                                    className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/30 dark:hover:bg-primary-900/10 cursor-pointer transition-all"
+                                >
+                                    <div className="icon-circle-primary w-10 h-10 mb-3 group-hover/file:scale-110 transition-transform">
+                                        <Upload size={18} />
+                                    </div>
+                                    <p className="text-xs font-bold text-gray-900 dark:text-white mb-1">
+                                        {formData.document ? formData.document.name : 'Pick a file from local folder'}
+                                    </p>
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-medium">
+                                        {formData.document ? `${(formData.document.size / 1024).toFixed(1)} KB` : 'PDF, DOCX, or Images up to 10MB'}
+                                    </p>
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            )}
+                </form>
+            </Modal>
         </MainLayout>
     );
 };

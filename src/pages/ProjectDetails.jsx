@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
-import { Card, StatusBadge } from '../components/common';
+import { Card, StatusBadge, Modal } from '../components/common';
 import { ArrowLeft, Trash2, Edit3, Plus, ChevronDown, X, Link2, Check, Globe, Server, Mail } from 'lucide-react';
 import { projectsAPI, infraAPI } from '../services/api';
 
@@ -499,142 +499,130 @@ const ProjectDetails = () => {
             </div>
 
             {/* New Task Modal */}
-            {showNewTaskModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-md p-6 animate-enter relative"
-                    >
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">New Task</h2>
-                            <button onClick={() => setShowNewTaskModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-150 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleAddTask}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Task Title *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={newTaskData.title}
-                                        onChange={(e) => setNewTaskData({ ...newTaskData, title: e.target.value })}
-                                        className="input"
-                                        placeholder="What needs to be done?"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Due Date</label>
-                                    <input
-                                        type="date"
-                                        value={newTaskData.date}
-                                        onChange={(e) => setNewTaskData({ ...newTaskData, date: e.target.value })}
-                                        className="input"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
-                                    <div className="relative">
-                                        <select
-                                            value={newTaskData.status}
-                                            onChange={(e) => setNewTaskData({ ...newTaskData, status: e.target.value })}
-                                            className="input appearance-none cursor-pointer"
-                                        >
-                                            <option value="todo">To Do</option>
-                                            <option value="in_progress">In Progress</option>
-                                            <option value="completed">Completed</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex gap-3 mt-8">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowNewTaskModal(false)}
-                                    className="flex-1 btn btn-secondary text-sm"
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className="flex-1 btn btn-primary text-sm">
-                                    Add Task
-                                </button>
-                            </div>
-                        </form>
+            <Modal
+                isOpen={showNewTaskModal}
+                onClose={() => setShowNewTaskModal(false)}
+                title="New Task"
+                maxWidth="max-w-md"
+                footer={
+                    <div className="flex gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={() => setShowNewTaskModal(false)}
+                            className="flex-1 btn btn-secondary text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" form="new-task-form" className="flex-1 btn btn-primary text-sm">
+                            Add Task
+                        </button>
                     </div>
-                </div>
-            )}
+                }
+            >
+                <form id="new-task-form" onSubmit={handleAddTask}>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Task Title *</label>
+                            <input
+                                type="text"
+                                required
+                                value={newTaskData.title}
+                                onChange={(e) => setNewTaskData({ ...newTaskData, title: e.target.value })}
+                                className="input"
+                                placeholder="What needs to be done?"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Due Date</label>
+                            <input
+                                type="date"
+                                value={newTaskData.date}
+                                onChange={(e) => setNewTaskData({ ...newTaskData, date: e.target.value })}
+                                className="input"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
+                            <select
+                                value={newTaskData.status}
+                                onChange={(e) => setNewTaskData({ ...newTaskData, status: e.target.value })}
+                                className="input appearance-none cursor-pointer"
+                            >
+                                <option value="todo">To Do</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </Modal>
 
             {/* Edit Project Modal */}
-            {showEditModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-md p-6 animate-enter relative"
-                    >
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Project</h2>
-                            <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-150 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleUpdate}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Title *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={editFormData.title || ''}
-                                        onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                                        className="input"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Client</label>
-                                    <input
-                                        type="text"
-                                        value={editFormData.client || ''}
-                                        onChange={(e) => setEditFormData({ ...editFormData, client: e.target.value })}
-                                        className="input"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Assignee</label>
-                                    <input
-                                        type="text"
-                                        value={editFormData.assignee || ''}
-                                        onChange={(e) => setEditFormData({ ...editFormData, assignee: e.target.value })}
-                                        className="input"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
-                                    <div className="relative">
-                                        <select
-                                            value={editFormData.status || 'in_progress'}
-                                            onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                                            className="input appearance-none cursor-pointer"
-                                        >
-                                            <option value="in_progress">In Progress</option>
-                                            <option value="on_hold">On Hold</option>
-                                            <option value="completed">Completed</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex gap-3 mt-8">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowEditModal(false)}
-                                    className="flex-1 btn btn-secondary text-sm"
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className="flex-1 btn btn-primary text-sm">
-                                    Save Changes
-                                </button>
-                            </div>
-                        </form>
+            <Modal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                title="Edit Project"
+                maxWidth="max-w-md"
+                footer={
+                    <div className="flex gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={() => setShowEditModal(false)}
+                            className="flex-1 btn btn-secondary text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" form="edit-project-form" className="flex-1 btn btn-primary text-sm">
+                            Save Changes
+                        </button>
                     </div>
-                </div>
-            )}
+                }
+            >
+                <form id="edit-project-form" onSubmit={handleUpdate}>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Title *</label>
+                            <input
+                                type="text"
+                                required
+                                value={editFormData.title || ''}
+                                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                                className="input"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Client</label>
+                            <input
+                                type="text"
+                                value={editFormData.client || ''}
+                                onChange={(e) => setEditFormData({ ...editFormData, client: e.target.value })}
+                                className="input"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Assignee</label>
+                            <input
+                                type="text"
+                                value={editFormData.assignee || ''}
+                                onChange={(e) => setEditFormData({ ...editFormData, assignee: e.target.value })}
+                                className="input"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
+                            <select
+                                value={editFormData.status || 'in_progress'}
+                                onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                                className="input appearance-none cursor-pointer"
+                            >
+                                <option value="in_progress">In Progress</option>
+                                <option value="on_hold">On Hold</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </Modal>
         </MainLayout>
     );
 };

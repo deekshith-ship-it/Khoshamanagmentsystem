@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
-import { Card, Avatar, StatusBadge } from '../components/common';
+import { Card, Avatar, StatusBadge, Modal } from '../components/common';
 import {
     ArrowLeft, Phone, Mail, MessageCircle, Clock, Send, Link2, X,
     ArrowRight, CheckCircle, XCircle, FileText, Upload, Calendar, User, Edit2, ChevronDown, Save, Briefcase, Globe
@@ -709,338 +709,331 @@ const LeadDetails = () => {
 
 
 
-            {/* MODALS */}
-
-            {/* 1. Proposal Modal - Enhanced */}
-            {
-                showProposalModal && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-enter">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold">Create & Attach Proposal</h2>
-                                <button onClick={() => setShowProposalModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
-                            </div>
-
-                            <form onSubmit={handleSubmitProposal} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="block text-xs font-bold text-gray-500 uppercase">Proposal Name *</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            className="input"
-                                            value={proposalForm.title}
-                                            onChange={e => setProposalForm(p => ({ ...p, title: e.target.value }))}
-                                            placeholder="e.g. Website Redesign Q3"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="block text-xs font-bold text-gray-500 uppercase">Total Value (₹) *</label>
-                                        <input
-                                            type="number"
-                                            required
-                                            className="input"
-                                            value={proposalForm.value}
-                                            onChange={e => setProposalForm(p => ({ ...p, value: e.target.value }))}
-                                            placeholder="0.00"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase">Scope of Work</label>
-                                    <textarea
-                                        className="input min-h-[80px]"
-                                        value={proposalForm.scope}
-                                        onChange={e => setProposalForm(p => ({ ...p, scope: e.target.value }))}
-                                        placeholder="Define the scope..."
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="block text-xs font-bold text-gray-500 uppercase">Exclusions</label>
-                                        <textarea
-                                            className="input min-h-[60px]"
-                                            value={proposalForm.exclusions}
-                                            onChange={e => setProposalForm(p => ({ ...p, exclusions: e.target.value }))}
-                                            placeholder="What is NOT included..."
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="block text-xs font-bold text-gray-500 uppercase">Terms & Conditions</label>
-                                        <textarea
-                                            className="input min-h-[60px]"
-                                            value={proposalForm.terms}
-                                            onChange={e => setProposalForm(p => ({ ...p, terms: e.target.value }))}
-                                            placeholder="Payment terms, timeline..."
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Attachment (PDF)</label>
-                                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer"
-                                        onClick={() => document.getElementById('prop-upload').click()}
-                                    >
-                                        <Upload className="mx-auto text-gray-400 mb-2" />
-                                        <p className="text-sm font-medium text-gray-600">
-                                            {proposalFile ? proposalFile.name : 'Click to upload Proposal PDF'}
-                                        </p>
-                                        <input
-                                            id="prop-upload"
-                                            type="file"
-                                            accept=".pdf,.doc,.docx"
-                                            className="hidden"
-                                            onChange={(e) => setProposalFile(e.target.files[0])}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3 pt-4 border-t border-gray-100">
-                                    <button type="button" onClick={() => setShowProposalModal(false)} className="btn btn-secondary flex-1">Cancel</button>
-                                    <button type="submit" disabled={isUploading} className="btn btn-primary flex-1 shadow-lg shadow-primary-500/20">
-                                        {isUploading ? 'Creating...' : 'Create Proposal & Send'}
-                                    </button>
-                                </div>
-                            </form>
-                        </Card>
+            {/* 1. Proposal Modal */}
+            <Modal
+                isOpen={showProposalModal}
+                onClose={() => setShowProposalModal(false)}
+                title="Create & Attach Proposal"
+                maxWidth="max-w-2xl"
+                footer={
+                    <div className="flex gap-3 w-full">
+                        <button type="button" onClick={() => setShowProposalModal(false)} className="flex-1 btn btn-secondary">Cancel</button>
+                        <button type="submit" form="proposal-form" disabled={isUploading} className="flex-1 btn btn-primary shadow-lg shadow-primary-500/20">
+                            {isUploading ? 'Creating...' : 'Create Proposal & Send'}
+                        </button>
                     </div>
-                )
-            }
-
-            {/* 2. Lost Reason Modal */}
-            {
-                showLostModal && (
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <Card className="w-full max-w-md animate-enter">
-                            <h2 className="text-lg font-bold mb-4 text-red-600">Mark as Closed Lost</h2>
-                            <form onSubmit={handleSubmitLost} className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Reason (Mandatory)</label>
-                                    <select
-                                        className="input"
-                                        required
-                                        value={lostReason}
-                                        onChange={(e) => setLostReason(e.target.value)}
-                                    >
-                                        <option value="">Select a reason...</option>
-                                        {LOST_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
-                                    </select>
-                                </div>
-                                {lostReason === 'Other' && (
-                                    <div>
-                                        <input
-                                            type="text"
-                                            className="input"
-                                            placeholder="Please specify..."
-                                            required
-                                            value={otherReason}
-                                            onChange={(e) => setOtherReason(e.target.value)}
-                                        />
-                                    </div>
-                                )}
-                                <div className="flex gap-2 pt-2">
-                                    <button type="button" onClick={() => setShowLostModal(false)} className="btn btn-secondary flex-1">Cancel</button>
-                                    <button type="submit" disabled={!lostReason} className="btn bg-red-600 text-white hover:bg-red-700 flex-1">Confirm Lost</button>
-                                </div>
-                            </form>
-                        </Card>
-                    </div>
-                )
-            }
-
-            {/* 3. Project Conversion Modal */}
-            {
-                showConvertModal && (
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <Card className="w-full max-w-lg animate-enter max-h-[90vh] overflow-y-auto">
-                            <h2 className="text-lg font-bold mb-4">Convert to Project</h2>
-                            <div className="space-y-4">
-                                <p className="text-sm text-gray-500 mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                    Please upload the required documents to verify this deal before converting to a project.
-                                </p>
-
-                                {['scope', 'agreement', 'contract', 'pricing'].map(doc => (
-                                    <div key={doc} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl bg-gray-50">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-full ${conversionDocs[doc] ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}>
-                                                {conversionDocs[doc] ? <CheckCircle size={16} /> : <FileText size={16} />}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-sm capitalize">{doc} Document</p>
-                                                <p className="text-xs text-gray-400">{conversionDocs[doc] ? conversionDocs[doc].name : 'Required'}</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            className="btn btn-secondary py-1 text-xs"
-                                            onClick={() => document.getElementById(`doc-${doc}`).click()}
-                                        >
-                                            {conversionDocs[doc] ? 'Change' : 'Upload'}
-                                        </button>
-                                        <input
-                                            id={`doc-${doc}`}
-                                            type="file"
-                                            className="hidden"
-                                            onChange={(e) => setConversionDocs(prev => ({ ...prev, [doc]: e.target.files[0] }))}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex gap-2 pt-6 mt-4 border-t border-gray-100">
-                                <button onClick={() => setShowConvertModal(false)} className="btn btn-secondary flex-1">Cancel</button>
-                                <button
-                                    onClick={handleConvertToProject}
-                                    disabled={isUploading}
-                                    className="btn btn-primary flex-1"
-                                >
-                                    {isUploading ? 'Verifying & Creating...' : 'Verify & Create Project'}
-                                </button>
-                            </div>
-                        </Card>
-                    </div>
-                )
-            }
-
-            {/* 4. Edit Lead Modal */}
-            {
-                showEditModal && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-enter scrollbar-hide">
-                            <LeadManagementForm
-                                initialData={lead}
-                                onSubmit={async (data) => {
-                                    try {
-                                        await leadsAPI.update(id, data);
-                                        setShowEditModal(false);
-                                        fetchLeadData();
-                                    } catch (error) {
-                                        console.error('Update error:', error);
-                                    }
-                                }}
-                                onCancel={() => setShowEditModal(false)}
+                }
+            >
+                <form id="proposal-form" onSubmit={handleSubmitProposal} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-gray-500 uppercase">Proposal Name *</label>
+                            <input
+                                type="text"
+                                required
+                                className="input"
+                                value={proposalForm.title}
+                                onChange={e => setProposalForm(p => ({ ...p, title: e.target.value }))}
+                                placeholder="e.g. Website Redesign Q3"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-gray-500 uppercase">Total Value (₹) *</label>
+                            <input
+                                type="number"
+                                required
+                                className="input"
+                                value={proposalForm.value}
+                                onChange={e => setProposalForm(p => ({ ...p, value: e.target.value }))}
+                                placeholder="0.00"
                             />
                         </div>
                     </div>
-                )
-            }
-            {/* 5. Confirmation Modal */}
-            {
-                showConfirmModal && (
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <Card className="w-full max-w-sm animate-enter text-center">
-                            <h2 className="text-lg font-bold mb-2">Move to {PIPELINE_STAGES.find(s => s.key === pendingStage)?.label}?</h2>
-                            <p className="text-sm text-gray-500 mb-6">This will update the pipeline stage and log an activity.</p>
-                            <div className="flex gap-2">
-                                <button onClick={() => setShowConfirmModal(false)} className="btn btn-secondary flex-1">Cancel</button>
-                                <button onClick={confirmStageChange} className="btn btn-primary flex-1">Confirm Move</button>
-                            </div>
-                        </Card>
+
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-500 uppercase">Scope of Work</label>
+                        <textarea
+                            className="input min-h-[80px]"
+                            value={proposalForm.scope}
+                            onChange={e => setProposalForm(p => ({ ...p, scope: e.target.value }))}
+                            placeholder="Define the scope..."
+                        />
                     </div>
-                )
-            }
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-gray-500 uppercase">Exclusions</label>
+                            <textarea
+                                className="input min-h-[60px]"
+                                value={proposalForm.exclusions}
+                                onChange={e => setProposalForm(p => ({ ...p, exclusions: e.target.value }))}
+                                placeholder="What is NOT included..."
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-gray-500 uppercase">Terms & Conditions</label>
+                            <textarea
+                                className="input min-h-[60px]"
+                                value={proposalForm.terms}
+                                onChange={e => setProposalForm(p => ({ ...p, terms: e.target.value }))}
+                                placeholder="Payment terms, timeline..."
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Attachment (PDF)</label>
+                        <div className="border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl p-6 text-center hover:bg-gray-50 dark:hover:bg-primary-900/10 transition-colors cursor-pointer group"
+                            onClick={() => document.getElementById('prop-upload').click()}
+                        >
+                            <Upload className="mx-auto text-gray-400 group-hover:text-primary-500 mb-2 transition-colors" />
+                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                {proposalFile ? proposalFile.name : 'Click to upload Proposal PDF'}
+                            </p>
+                            <input
+                                id="prop-upload"
+                                type="file"
+                                accept=".pdf,.doc,.docx"
+                                className="hidden"
+                                onChange={(e) => setProposalFile(e.target.files[0])}
+                            />
+                        </div>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* 2. Lost Reason Modal */}
+            <Modal
+                isOpen={showLostModal}
+                onClose={() => setShowLostModal(false)}
+                title="Mark as Closed Lost"
+                maxWidth="max-w-md"
+                footer={
+                    <div className="flex gap-2 w-full">
+                        <button type="button" onClick={() => setShowLostModal(false)} className="btn btn-secondary flex-1">Cancel</button>
+                        <button type="submit" form="lost-reason-form" disabled={!lostReason} className="btn bg-red-600 text-white hover:bg-red-700 flex-1">Confirm Lost</button>
+                    </div>
+                }
+            >
+                <form id="lost-reason-form" onSubmit={handleSubmitLost} className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Reason (Mandatory)</label>
+                        <select
+                            className="input"
+                            required
+                            value={lostReason}
+                            onChange={(e) => setLostReason(e.target.value)}
+                        >
+                            <option value="">Select a reason...</option>
+                            {LOST_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                    </div>
+                    {lostReason === 'Other' && (
+                        <div>
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="Please specify..."
+                                required
+                                value={otherReason}
+                                onChange={(e) => setOtherReason(e.target.value)}
+                            />
+                        </div>
+                    )}
+                </form>
+            </Modal>
+
+            {/* 3. Project Conversion Modal */}
+            <Modal
+                isOpen={showConvertModal}
+                onClose={() => setShowConvertModal(false)}
+                title="Convert to Project"
+                maxWidth="max-w-lg"
+                footer={
+                    <div className="flex gap-2 w-full">
+                        <button onClick={() => setShowConvertModal(false)} className="btn btn-secondary flex-1">Cancel</button>
+                        <button
+                            onClick={handleConvertToProject}
+                            disabled={isUploading}
+                            className="btn btn-primary flex-1"
+                        >
+                            {isUploading ? 'Verifying & Creating...' : 'Verify & Create Project'}
+                        </button>
+                    </div>
+                }
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-500 mb-4 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                        Please upload the required documents to verify this deal before converting to a project.
+                    </p>
+
+                    {['scope', 'agreement', 'contract', 'pricing'].map(doc => (
+                        <div key={doc} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-full ${conversionDocs[doc] ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-200 text-gray-500 dark:bg-gray-700'}`}>
+                                    {conversionDocs[doc] ? <CheckCircle size={16} /> : <FileText size={16} />}
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-bold text-sm capitalize">{doc} Document</p>
+                                    <p className="text-xs text-gray-400 truncate max-w-[150px]">{conversionDocs[doc] ? conversionDocs[doc].name : 'Required'}</p>
+                                </div>
+                            </div>
+                            <button
+                                className="btn btn-secondary py-1 text-xs shrink-0"
+                                onClick={() => document.getElementById(`doc-${doc}`).click()}
+                            >
+                                {conversionDocs[doc] ? 'Change' : 'Upload'}
+                            </button>
+                            <input
+                                id={`doc-${doc}`}
+                                type="file"
+                                className="hidden"
+                                onChange={(e) => setConversionDocs(prev => ({ ...prev, [doc]: e.target.files[0] }))}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </Modal>
+
+            {/* 4. Edit Lead Modal */}
+            <Modal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                title="Lead Management"
+                maxWidth="max-w-4xl"
+            >
+                <LeadManagementForm
+                    initialData={lead}
+                    onSubmit={async (data) => {
+                        try {
+                            await leadsAPI.update(id, data);
+                            setShowEditModal(false);
+                            fetchLeadData();
+                        } catch (error) {
+                            console.error('Update error:', error);
+                        }
+                    }}
+                    onCancel={() => setShowEditModal(false)}
+                />
+            </Modal>
+
+            {/* 5. Confirmation Modal */}
+            <Modal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                title={`Move to ${PIPELINE_STAGES.find(s => s.key === pendingStage)?.label || ''}?`}
+                maxWidth="max-w-sm"
+                footer={
+                    <div className="flex gap-2 w-full">
+                        <button onClick={() => setShowConfirmModal(false)} className="btn btn-secondary flex-1">Cancel</button>
+                        <button onClick={confirmStageChange} className="btn btn-primary flex-1">Confirm Move</button>
+                    </div>
+                }
+            >
+                <p className="text-sm text-gray-500 text-center">This will update the pipeline stage and log an activity.</p>
+            </Modal>
 
             {/* 6. Add Activity Modal */}
-            {showActivityModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <Card className="w-full max-w-lg animate-enter">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">Log Activity</h2>
-                            <button onClick={() => setShowActivityModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
-                        </div>
+            <Modal
+                isOpen={showActivityModal}
+                onClose={() => setShowActivityModal(false)}
+                title="Log Activity"
+                maxWidth="max-w-lg"
+                footer={
+                    <div className="flex gap-3 w-full">
+                        <button type="button" onClick={() => setShowActivityModal(false)} className="btn btn-secondary flex-1">Cancel</button>
+                        <button
+                            type="submit"
+                            form="activity-form"
+                            disabled={!activityContent.trim()}
+                            className="btn btn-primary flex-1 shadow-lg shadow-primary-500/20"
+                        >
+                            Log {activityType.charAt(0).toUpperCase() + activityType.slice(1)}
+                        </button>
+                    </div>
+                }
+            >
+                <div>
+                    <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded-xl flex gap-2 mb-6">
+                        {['note', 'call', 'meeting'].map(type => (
+                            <button
+                                key={type}
+                                onClick={() => setActivityType(type)}
+                                className={`
+                                    flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all
+                                    ${activityType === type
+                                        ? 'bg-white dark:bg-dark-surface shadow-sm text-primary-600 ring-1 ring-black/5 dark:ring-white/5'
+                                        : 'text-gray-500 hover:bg-white/50 dark:hover:bg-white/5 hover:text-gray-700 dark:hover:text-gray-300'}
+                                `}
+                            >
+                                {type === 'note' && <FileText size={16} />}
+                                {type === 'call' && <Phone size={16} />}
+                                {type === 'meeting' && <User size={16} />}
+                                {type}
+                            </button>
+                        ))}
+                    </div>
 
-                        <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded-xl flex gap-2 mb-6">
-                            {['note', 'call', 'meeting'].map(type => (
-                                <button
-                                    key={type}
-                                    onClick={() => setActivityType(type)}
-                                    className={`
-                                        flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all
-                                        ${activityType === type
-                                            ? 'bg-white dark:bg-dark-surface shadow-sm text-primary-600 ring-1 ring-black/5 dark:ring-white/5'
-                                            : 'text-gray-500 hover:bg-white/50 hover:text-gray-700'}
-                                    `}
-                                >
-                                    {type === 'note' && <FileText size={16} />}
-                                    {type === 'call' && <Phone size={16} />}
-                                    {type === 'meeting' && <User size={16} />}
-                                    {type}
-                                </button>
-                            ))}
-                        </div>
+                    <form id="activity-form" onSubmit={(e) => { handleAddActivity(e); setShowActivityModal(false); }}>
+                        {activityType === 'note' && (
+                            <textarea
+                                value={activityContent}
+                                onChange={(e) => setActivityContent(e.target.value)}
+                                placeholder="Add a detailed note..."
+                                className="input min-h-[120px]"
+                                autoFocus
+                            />
+                        )}
 
-                        <form onSubmit={(e) => { handleAddActivity(e); setShowActivityModal(false); }}>
-                            {activityType === 'note' && (
-                                <textarea
-                                    value={activityContent}
-                                    onChange={(e) => setActivityContent(e.target.value)}
-                                    placeholder="Add a detailed note..."
-                                    className="input min-h-[120px]"
-                                    autoFocus
-                                />
-                            )}
-
-                            {activityType === 'call' && (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-gray-400 uppercase">Outcome</label>
-                                            <input type="text" id="call-outcome" placeholder="e.g. Connected, Left Voicemail" className="input" />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-gray-400 uppercase">Duration</label>
-                                            <input type="text" id="call-duration" placeholder="e.g. 15m" className="input" />
-                                        </div>
+                        {activityType === 'call' && (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-gray-400 uppercase">Outcome</label>
+                                        <input type="text" id="call-outcome" placeholder="e.g. Connected, Left Voicemail" className="input" />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-gray-400 uppercase">Call Summary</label>
-                                        <textarea
-                                            value={activityContent}
-                                            onChange={(e) => setActivityContent(e.target.value)}
-                                            placeholder="What was discussed..."
-                                            className="input min-h-[100px]"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-gray-400 uppercase">Follow-up Date</label>
-                                        <input type="date" id="call-followup" className="input" />
+                                        <label className="text-xs font-bold text-gray-400 uppercase">Duration</label>
+                                        <input type="text" id="call-duration" placeholder="e.g. 15m" className="input" />
                                     </div>
                                 </div>
-                            )}
-
-                            {activityType === 'meeting' && (
-                                <div className="space-y-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-gray-400 uppercase">Meeting Date & Time</label>
-                                        <input type="datetime-local" id="meeting-date" className="input" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-gray-400 uppercase">Meeting Minutes</label>
-                                        <textarea
-                                            value={activityContent}
-                                            onChange={(e) => setActivityContent(e.target.value)}
-                                            placeholder="Key discussion points and next actions..."
-                                            className="input min-h-[120px]"
-                                        />
-                                    </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Call Summary</label>
+                                    <textarea
+                                        value={activityContent}
+                                        onChange={(e) => setActivityContent(e.target.value)}
+                                        placeholder="What was discussed..."
+                                        className="input min-h-[100px]"
+                                    />
                                 </div>
-                            )}
-
-                            <div className="mt-8 flex gap-3 border-t border-gray-100 pt-6">
-                                <button type="button" onClick={() => setShowActivityModal(false)} className="btn btn-secondary flex-1">Cancel</button>
-                                <button
-                                    type="submit"
-                                    disabled={!activityContent.trim()}
-                                    className="btn btn-primary flex-1 shadow-lg shadow-primary-500/20"
-                                >
-                                    Log {activityType.charAt(0).toUpperCase() + activityType.slice(1)}
-                                </button>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Follow-up Date</label>
+                                    <input type="date" id="call-followup" className="input" />
+                                </div>
                             </div>
-                        </form>
-                    </Card>
+                        )}
+
+                        {activityType === 'meeting' && (
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Meeting Date & Time</label>
+                                    <input type="datetime-local" id="meeting-date" className="input" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Meeting Minutes</label>
+                                    <textarea
+                                        value={activityContent}
+                                        onChange={(e) => setActivityContent(e.target.value)}
+                                        placeholder="Key discussion points and next actions..."
+                                        className="input min-h-[120px]"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </form>
                 </div>
-            )}
-        </MainLayout >
+            </Modal>
+        </MainLayout>
     );
 };
 

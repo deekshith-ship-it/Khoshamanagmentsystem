@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../db');
+const { db } = require('../config/db');
 
 // Helper to update project stats after task changes
 async function updateProjectStats(projectId) {
@@ -55,14 +55,37 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const { title, client, status, progress, tasks, assignee, proposal_id, lead_id } = req.body;
+
+        // Ensure strictly required fields are present
+        if (!title) {
+            return res.status(400).json({ error: 'Project title is required' });
+        }
+
+        console.log('📝 Creating project with payload:', req.body);
         const result = await db.execute({
             sql: 'INSERT INTO projects (title, client, status, progress, tasks, assignee, proposal_id, lead_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime("now")) RETURNING *',
-            args: [title, client, status || 'in-progress', progress || 0, tasks || 0, assignee, proposal_id, lead_id]
+            args: [
+                title,
+                client || null,
+                status || 'in-progress',
+                progress || 0,
+                tasks || 0,
+                assignee || null,
+                proposal_id || null,
+                lead_id || null
+            ]
         });
+        console.log('✅ Project created successfully:', result.rows[0]);
         res.status(201).json(result.rows[0]);
     } catch (error) {
-        console.error('Error creating project:', error);
-        res.status(500).json({ error: 'Failed to create project' });
+        console.error('❌ Error creating project:', error);
+        // Log to a file as well
+        require('fs').appendFileSync('error_log.txt', `[${new Date().toISOString()}] Project Creation Error: ${error.stack}\n`);
+        res.status(500).json({
+            error: error.message || 'Failed to create project',
+            details: error.toString(),
+            stack: error.stack
+        });
     }
 });
 
@@ -82,9 +105,11 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
     try {
-        await db.execute({ sql: 'DELETE FROM project_tasks WHERE project_id = ?', args: [req.params.id] });
+        // Cleanup related data (Cascade should handle tasks if FK is set, but explicit cleanup doesn't hurt)
+        await db.execute({ sql: 'DELETE FROM tasks WHERE project_id = ?', args: [req.params.id] });
         await db.execute({ sql: 'DELETE FROM project_notes WHERE project_id = ?', args: [req.params.id] });
-        await db.execute({ sql: 'DELETE FROM project_assets WHERE project_id = ?', args: [req.params.id] });
+        await db.execute({ sql: 'DELETE FROM project_infra WHERE project_id = ?', args: [req.params.id] });
+        await db.execute({ sql: 'DELETE FROM project_assets WHERE project_id = ?', args: [req.params.id] }); // Cleanup legacy if exists
         await db.execute({ sql: 'DELETE FROM projects WHERE id = ?', args: [req.params.id] });
         res.json({ success: true });
     } catch (error) {

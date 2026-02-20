@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
 import { Card, Avatar, StatusBadge, FloatingAddButton } from '../components/common';
-import { Clock, X, Plus } from 'lucide-react';
+import { Clock, X, Plus, CheckCircle2 } from 'lucide-react';
 import { projectsAPI } from '../services/api';
 
 const projectFilters = [
@@ -18,6 +19,8 @@ const Projects = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [showModal, setShowModal] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
     const [formData, setFormData] = useState({ title: '', client: '', status: 'in-progress', assignee: '' });
 
     useEffect(() => {
@@ -28,7 +31,7 @@ const Projects = () => {
         try {
             setLoading(true);
             const data = await projectsAPI.getAll();
-            setProjects(data);
+            setProjects(data || []);
         } catch (error) {
             console.error('Error fetching projects:', error);
         } finally {
@@ -38,13 +41,28 @@ const Projects = () => {
 
     const handleCreate = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
         try {
+            setIsSubmitting(true);
             await projectsAPI.create(formData);
-            setShowModal(false);
-            setFormData({ title: '', client: '', status: 'in-progress', assignee: '' });
-            fetchProjects();
+
+            // Show success message
+            setSuccessMessage('Project created successfully!');
+
+            // Wait a bit then close and refresh
+            setTimeout(async () => {
+                setShowModal(false);
+                setSuccessMessage('');
+                setFormData({ title: '', client: '', status: 'in-progress', assignee: '' });
+                await fetchProjects();
+                setIsSubmitting(false);
+            }, 1500);
+
         } catch (error) {
             console.error('Error creating project:', error);
+            alert(`Failed to create project: ${error.message}`);
+            setIsSubmitting(false);
         }
     };
 
@@ -168,80 +186,113 @@ const Projects = () => {
             <FloatingAddButton onClick={() => setShowModal(true)} />
 
             {/* Add Project Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border w-full max-w-md p-6 relative animate-enter"
-                    >
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">New Project</h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-150 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleCreate}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Title *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.title}
-                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        className="input"
-                                        placeholder="Project title"
-                                    />
+            {showModal && createPortal(
+                <div className="modal-overlay">
+                    <div className="modal-premium w-full max-w-md p-6 relative animate-enter shadow-premium overflow-visible">
+                        {successMessage ? (
+                            <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
+                                <div className="w-16 h-16 bg-green-50 dark:bg-green-500/10 rounded-full flex items-center justify-center">
+                                    <CheckCircle2 size={32} className="text-green-500" />
                                 </div>
                                 <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Client</label>
-                                    <input
-                                        type="text"
-                                        value={formData.client}
-                                        onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                                        className="input"
-                                        placeholder="Client name"
-                                    />
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Awesome!</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mt-1">{successMessage}</p>
                                 </div>
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Assignee</label>
-                                    <input
-                                        type="text"
-                                        value={formData.assignee}
-                                        onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
-                                        className="input"
-                                        placeholder="Assign to"
-                                    />
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">New Project</h2>
+                                    <button
+                                        onClick={() => setShowModal(false)}
+                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-150 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    >
+                                        <X size={20} />
+                                    </button>
                                 </div>
-                                <div>
-                                    <label className="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
-                                    <div className="relative">
-                                        <select
-                                            value={formData.status}
-                                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                            className="input appearance-none cursor-pointer"
-                                        >
-                                            <option value="in-progress">In Progress</option>
-                                            <option value="blocked">Blocked</option>
-                                            <option value="reviewing">Reviewing</option>
-                                            <option value="completed">Completed</option>
-                                        </select>
+                                <form onSubmit={handleCreate}>
+                                    <div className="space-y-5">
+                                        <div>
+                                            <label className="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Project Title *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                disabled={isSubmitting}
+                                                value={formData.title}
+                                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                                className="input focus:ring-2 focus:ring-primary-500/20"
+                                                placeholder="e.g. Website Overhaul"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Client Name</label>
+                                            <input
+                                                type="text"
+                                                disabled={isSubmitting}
+                                                value={formData.client}
+                                                onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+                                                className="input focus:ring-2 focus:ring-primary-500/20"
+                                                placeholder="e.g. Acme Corp"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Assignee</label>
+                                                <input
+                                                    type="text"
+                                                    disabled={isSubmitting}
+                                                    value={formData.assignee}
+                                                    onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
+                                                    className="input focus:ring-2 focus:ring-primary-500/20 text-sm"
+                                                    placeholder="Name"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Initial Status</label>
+                                                <select
+                                                    disabled={isSubmitting}
+                                                    value={formData.status}
+                                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                                    className="input appearance-none cursor-pointer text-sm"
+                                                >
+                                                    <option value="in-progress">In Progress</option>
+                                                    <option value="blocked">Blocked</option>
+                                                    <option value="reviewing">Reviewing</option>
+                                                    <option value="completed">Completed</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <div className="flex gap-3 mt-8">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="flex-1 btn btn-secondary text-sm"
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className="flex-1 btn btn-primary text-sm">
-                                    Create Project
-                                </button>
-                            </div>
-                        </form>
+                                    <div className="flex gap-4 mt-10">
+                                        <button
+                                            type="button"
+                                            disabled={isSubmitting}
+                                            onClick={() => setShowModal(false)}
+                                            className="flex-1 px-4 py-3 text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className={`flex-1 btn-primary py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                    Creating...
+                                                </>
+                                            ) : (
+                                                'Create Project'
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            </>
+                        )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </MainLayout>
     );

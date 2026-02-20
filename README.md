@@ -8,9 +8,10 @@ A full-stack business management dashboard built with React + Express + Turso (S
 khoshamanagment/
 ├── public/                  # Static assets (favicon, logo, index.html)
 ├── server/                  # Express.js backend
-│   ├── db.js                # Database connection (Turso)
+│   ├── config/              # Configuration (DB, Schema)
+│   │   ├── db.js            # Database connection (Turso)
+│   │   └── schema.sql        # Full database schema + seed data
 │   ├── index.js             # Express app entry point
-│   ├── schema.sql           # Full database schema + seed data
 │   └── routes/              # API route handlers
 │       ├── health.js        # Health check endpoint
 │       ├── leads.js         # Leads CRUD + comments/activities

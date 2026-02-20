@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
-import { Card, Avatar, SearchInput, FloatingAddButton } from '../components/common';
+import { Card, Avatar, SearchInput, FloatingAddButton, Modal } from '../components/common';
 import { X, Briefcase, Phone, Calendar, Clock, MoreHorizontal } from 'lucide-react';
 import { leadsAPI } from '../services/api';
 import LeadManagementForm from '../components/leads/LeadManagementForm';
@@ -184,16 +184,17 @@ const Leads = () => {
             <FloatingAddButton onClick={() => setShowModal(true)} />
 
             {/* Add Lead Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-enter scrollbar-hide">
-                        <LeadManagementForm
-                            onSubmit={handleCreate}
-                            onCancel={() => setShowModal(false)}
-                        />
-                    </div>
-                </div>
-            )}
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title="Lead Management"
+                maxWidth="max-w-4xl"
+            >
+                <LeadManagementForm
+                    onSubmit={handleCreate}
+                    onCancel={() => setShowModal(false)}
+                />
+            </Modal>
         </MainLayout>
     );
 };
